@@ -1013,14 +1013,53 @@ hr {
 /* ── DATAFRAME ── */
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
-/* ── BOTÃO COLAPSAR SIDEBAR — esconde texto, mantém botão ── */
-[data-testid="stSidebarCollapsedControl"] span,
-[data-testid="stSidebarCollapsedControl"] p,
-button[data-testid="stBaseButton-headerNoPadding"] span,
-button[data-testid="stBaseButton-headerNoPadding"] p {
+/* ── BOTÃO COLAPSAR SIDEBAR — esconde texto material icon, injeta «« ── */
+
+/* Quando a sidebar está ABERTA — botão dentro da sidebar */
+[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] span,
+[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] p {
     display: none !important;
     font-size: 0 !important;
-    visibility: hidden !important;
+}
+[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"]::after {
+    content: '«';
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #a78bfa;
+    line-height: 1;
+}
+
+/* Quando a sidebar está FECHADA — botão flutuante (stSidebarCollapsedControl) */
+[data-testid="stSidebarCollapsedControl"] span,
+[data-testid="stSidebarCollapsedControl"] p {
+    display: none !important;
+    font-size: 0 !important;
+}
+[data-testid="stSidebarCollapsedControl"] button::after {
+    content: '»';
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #a78bfa;
+    line-height: 1;
+}
+
+/* Garante que o botão tenha tamanho mínimo visível */
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(167,139,250,0.08) !important;
+    border: 1px solid rgba(167,139,250,0.2) !important;
+    border-radius: 8px !important;
+    transition: background 0.2s, border-color 0.2s !important;
+}
+[data-testid="stSidebarCollapsedControl"] button:hover,
+[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"]:hover {
+    background: rgba(167,139,250,0.18) !important;
+    border-color: rgba(167,139,250,0.4) !important;
 }
 
 /* ── SCROLLBAR ── */
