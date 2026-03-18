@@ -1061,6 +1061,12 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
     display: none !important;
 }
 
+/* ── REMOVE borda superior nativa dos blocos de coluna ── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border-top: none !important;
+    box-shadow: none !important;
+}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0e27; }
