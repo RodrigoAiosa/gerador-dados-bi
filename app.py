@@ -1043,10 +1043,10 @@ span[data-testid="stIconMaterial"]::before {
     color: #a78bfa !important;
     position: absolute !important;
     top: 0; left: 0 !important;
-    content: "\\eac3" !important;
+    content: "\\eac9" !important;
 }
 [data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before {
-    content: "\\eac9" !important;
+    content: "\\eac3" !important;
 }
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
