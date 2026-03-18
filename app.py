@@ -1054,8 +1054,9 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
     border-color: rgba(167,139,250,0.4) !important;
 }
 
-/* ── SLIDER — esconde input numérico ao hover ── */
-[data-testid="stSidebar"] [data-testid="stSlider"] input[type="number"] {
+/* ── SLIDER — esconde input numérico e tickbar ── */
+[data-testid="stSidebar"] [data-testid="stSlider"] input[type="number"],
+[data-testid="stSidebar"] [data-testid="stTickBar"] {
     display: none !important;
 }
 
