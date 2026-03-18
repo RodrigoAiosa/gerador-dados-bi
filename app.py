@@ -1056,7 +1056,7 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
 
 /* ── SLIDER — esconde input numérico e tickbar ── */
 [data-testid="stSidebar"] [data-testid="stSlider"] input[type="number"],
-[data-testid="stSidebar"] [data-testid="stTickBar"] {
+[data-testid="stSliderTickBar"] {
     display: none !important;
 }
 
