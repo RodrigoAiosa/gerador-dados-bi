@@ -1,1232 +1,787 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BI Data Generator PRO — Dados Reais para Business Intelligence</title>
-<meta name="description" content="Gere bases de dados profissionais no modelo estrela em segundos. 10 setores, modelo star schema, dCalendario automático. Ideal para projetos de Power BI, Tableau e Data Analytics.">
-<meta name="keywords" content="BI data generator, Power BI dados, star schema, modelo estrela, dCalendario, dados fictícios, business intelligence">
-<meta property="og:title" content="BI Data Generator PRO — Star Schema em Segundos">
-<meta property="og:description" content="Gere bases de dados profissionais no modelo estrela para Power BI, Tableau e qualquer projeto de BI.">
-<meta property="og:type" content="website">
-<meta name="robots" content="index, follow">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+"""
+BI Data Generator PRO
+Gerador de bases de dados no modelo estrela (Star Schema) para projetos de BI.
+Compatível com Power BI, Tableau e qualquer ferramenta de análise de dados.
+"""
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import random
+import zipfile
+import io
+from datetime import date, timedelta
+from faker import Faker
+
+# ── configuração da página ──────────────────────────────────────────────────
+st.set_page_config(
+    page_title="BI Data Generator PRO",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+fake = Faker("pt_BR")
+rng  = np.random.default_rng()
+
+# ── helpers ─────────────────────────────────────────────────────────────────
+def new_ids(n: int, prefix: str = "") -> list[int]:
+    return list(range(1, n + 1))
+
+def dcalendario(start: date, end: date) -> pd.DataFrame:
+    """Gera dCalendario compatível com o padrão Power Query."""
+    days = pd.date_range(start=start, end=end, freq="D")
+    df = pd.DataFrame({"Data": days})
+    df["Ano"]      = df["Data"].dt.year
+    df["Mes"]      = df["Data"].dt.month
+    meses_pt = {1:"Jan",2:"Fev",3:"Mar",4:"Abr",5:"Mai",6:"Jun",
+                7:"Jul",8:"Ago",9:"Set",10:"Out",11:"Nov",12:"Dez"}
+    df["MesAno"]   = df["Mes"].map(meses_pt) + "/" + df["Ano"].astype(str).str[-2:]
+    df["IdMesAno"] = df["Ano"] * 100 + df["Mes"]
+    df["Data"]     = df["Data"].dt.date
+    return df
+
+def rand_dates(start: date, end: date, n: int) -> list[date]:
+    delta = (end - start).days
+    return [start + timedelta(days=int(d)) for d in rng.integers(0, delta + 1, n)]
+
+def to_zip(tables: dict[str, pd.DataFrame]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, df in tables.items():
+            csv_buf = io.StringIO()
+            df.to_csv(csv_buf, index=False)
+            zf.writestr(f"{name}.csv", csv_buf.getvalue())
+    return buf.getvalue()
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  GERADORES POR SETOR
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── VAREJO ──────────────────────────────────────────────────────────────────
+def gerar_varejo(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_clientes  = min(n, 5000)
+    n_produtos  = min(500, n // 5 + 50)
+    n_vendedores = 50
+    n_filiais   = 10
+
+    estados = ["SP","RJ","MG","RS","PR","SC","BA","CE","PE","GO"]
+    regioes = {"SP":"Sudeste","RJ":"Sudeste","MG":"Sudeste","RS":"Sul","PR":"Sul",
+               "SC":"Sul","BA":"Nordeste","CE":"Nordeste","PE":"Nordeste","GO":"Centro-Oeste"}
+
+    dim_geo = pd.DataFrame({
+        "id_geo":  new_ids(len(estados)),
+        "estado":  estados,
+        "regiao":  [regioes[e] for e in estados],
+    })
+
+    dim_cliente = pd.DataFrame({
+        "id_cliente": new_ids(n_clientes),
+        "nome":       [fake.name() for _ in range(n_clientes)],
+        "cpf":        [fake.cpf()  for _ in range(n_clientes)],
+        "email":      [fake.email() for _ in range(n_clientes)],
+        "segmento":   random.choices(["Pessoa Física","Pessoa Jurídica","Premium"], k=n_clientes),
+        "cidade":     [fake.city() for _ in range(n_clientes)],
+        "uf":         random.choices(estados, k=n_clientes),
+    })
+
+    categorias = ["Eletrônicos","Vestuário","Alimentos","Móveis","Esporte","Beleza","Brinquedos"]
+    dim_produto = pd.DataFrame({
+        "id_produto": new_ids(n_produtos),
+        "nome":       [f"Produto {fake.word().capitalize()} {i}" for i in range(1, n_produtos+1)],
+        "sku":        [f"SKU-{rng.integers(10000,99999)}" for _ in range(n_produtos)],
+        "categoria":  random.choices(categorias, k=n_produtos),
+        "preco_unit": rng.uniform(10, 2000, n_produtos).round(2),
+        "custo_unit": rng.uniform(5,  1000, n_produtos).round(2),
+    })
+
+    dim_vendedor = pd.DataFrame({
+        "id_vendedor": new_ids(n_vendedores),
+        "nome":        [fake.name() for _ in range(n_vendedores)],
+        "cpf":         [fake.cpf()  for _ in range(n_vendedores)],
+        "regiao":      random.choices(list(regioes.values()), k=n_vendedores),
+        "meta_mensal": rng.integers(10000, 80000, n_vendedores),
+    })
+
+    dim_filial = pd.DataFrame({
+        "id_filial": new_ids(n_filiais),
+        "nome":      [f"Filial {fake.city()}" for _ in range(n_filiais)],
+        "uf":        random.choices(estados, k=n_filiais),
+        "id_geo":    random.choices(dim_geo["id_geo"].tolist(), k=n_filiais),
+        "tipo":      random.choices(["Loja Física","E-commerce","Outlet"], k=n_filiais),
+    })
+
+    datas    = rand_dates(start, end, n)
+    qtds     = rng.integers(1, 20, n)
+    produtos = random.choices(dim_produto["id_produto"].tolist(), k=n)
+    precos   = [dim_produto.loc[dim_produto["id_produto"]==p, "preco_unit"].values[0] for p in produtos]
+
+    fato = pd.DataFrame({
+        "id_venda":   new_ids(n),
+        "id_data":    datas,
+        "id_cliente": random.choices(dim_cliente["id_cliente"].tolist(), k=n),
+        "id_produto": produtos,
+        "id_vendedor":random.choices(dim_vendedor["id_vendedor"].tolist(), k=n),
+        "id_filial":  random.choices(dim_filial["id_filial"].tolist(), k=n),
+        "quantidade": qtds,
+        "valor_unit": [round(p, 2) for p in precos],
+        "desconto":   rng.uniform(0, 0.3, n).round(3),
+        "valor_total":[round(q * p * (1 - d), 2) for q, p, d in zip(qtds, precos, rng.uniform(0, 0.3, n))],
+        "canal":      random.choices(["Loja","Online","Telefone"], k=n),
+    })
+
+    return {
+        "DimCliente":  dim_cliente,
+        "DimProduto":  dim_produto,
+        "DimVendedor": dim_vendedor,
+        "DimFilial":   dim_filial,
+        "DimGeografia":dim_geo,
+        "FatoVendas":  fato,
+        "dCalendario": dcalendario(start, end),
+    }
+
+# ── FINANCEIRO ──────────────────────────────────────────────────────────────
+def gerar_financeiro(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_contas  = min(n, 3000)
+    n_agencias = 30
+    n_produtos = 20
+
+    dim_agencia = pd.DataFrame({
+        "id_agencia": new_ids(n_agencias),
+        "nome":       [f"Agência {fake.city()}" for _ in range(n_agencias)],
+        "codigo":     [f"{rng.integers(1000,9999)}-{rng.integers(0,9)}" for _ in range(n_agencias)],
+        "uf":         random.choices(["SP","RJ","MG","RS","PR"], k=n_agencias),
+        "tipo":       random.choices(["Física","Digital","Express"], k=n_agencias),
+    })
+
+    dim_conta = pd.DataFrame({
+        "id_conta":   new_ids(n_contas),
+        "titular":    [fake.name() for _ in range(n_contas)],
+        "cpf_cnpj":   [fake.cpf()  for _ in range(n_contas)],
+        "tipo_conta": random.choices(["Corrente","Poupança","Empresarial","Investimento"], k=n_contas),
+        "id_agencia": random.choices(dim_agencia["id_agencia"].tolist(), k=n_contas),
+        "segmento":   random.choices(["Varejo","Personnalité","Corporate","Private"], k=n_contas),
+    })
+
+    dim_produto = pd.DataFrame({
+        "id_produto":  new_ids(n_produtos),
+        "nome":        ["CDB","LCI","LCA","Tesouro Direto","Fundo DI","Fundo Multimercado",
+                        "Cartão Crédito","Cartão Débito","Seguro Vida","Previdência",
+                        "Financiamento","Empréstimo Pessoal","Consórcio","Câmbio",
+                        "Conta Corrente","Conta Poupança","PIX","TED","DOC","Cheque"],
+        "categoria":   ["Investimento"]*6 + ["Cartão"]*2 + ["Seguro","Previdência"] +
+                       ["Crédito"]*3 + ["Câmbio"] + ["Conta"]*2 + ["Pagamento"]*4,
+        "taxa_juros":  rng.uniform(0.005, 0.15, n_produtos).round(4),
+    })
+
+    tipos_transacao = ["Débito","Crédito","TED","DOC","PIX","Saque","Depósito","Investimento"]
+    fato = pd.DataFrame({
+        "id_transacao": new_ids(n),
+        "id_data":      rand_dates(start, end, n),
+        "id_conta":     random.choices(dim_conta["id_conta"].tolist(), k=n),
+        "id_agencia":   random.choices(dim_agencia["id_agencia"].tolist(), k=n),
+        "id_produto":   random.choices(dim_produto["id_produto"].tolist(), k=n),
+        "tipo":         random.choices(tipos_transacao, k=n),
+        "valor":        rng.uniform(10, 50000, n).round(2),
+        "saldo_apos":   rng.uniform(0, 200000, n).round(2),
+        "status":       random.choices(["Aprovada","Negada","Pendente"], weights=[85,10,5], k=n),
+    })
+
+    return {
+        "DimAgencia":    dim_agencia,
+        "DimConta":      dim_conta,
+        "DimProduto":    dim_produto,
+        "FatoTransacao": fato,
+        "dCalendario":   dcalendario(start, end),
+    }
+
+# ── SAÚDE ────────────────────────────────────────────────────────────────────
+def gerar_saude(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_pacientes  = min(n, 3000)
+    n_medicos    = 80
+    n_proc       = 40
+    n_unidades   = 15
+
+    dim_unidade = pd.DataFrame({
+        "id_unidade": new_ids(n_unidades),
+        "nome":       [f"Unidade {fake.city()}" for _ in range(n_unidades)],
+        "tipo":       random.choices(["Hospital","UPA","Clínica","AME","CAPS"], k=n_unidades),
+        "uf":         random.choices(["SP","RJ","MG","RS","PR"], k=n_unidades),
+        "leitos":     rng.integers(20, 400, n_unidades),
+    })
+
+    especialidades = ["Clínica Geral","Cardiologia","Ortopedia","Pediatria","Ginecologia",
+                      "Neurologia","Oncologia","Dermatologia","Psiquiatria","Oftalmologia"]
+    dim_medico = pd.DataFrame({
+        "id_medico":      new_ids(n_medicos),
+        "nome":           [f"Dr(a). {fake.name()}" for _ in range(n_medicos)],
+        "crm":            [f"CRM/{random.choice(['SP','RJ','MG'])}-{rng.integers(10000,99999)}" for _ in range(n_medicos)],
+        "especialidade":  random.choices(especialidades, k=n_medicos),
+        "id_unidade":     random.choices(dim_unidade["id_unidade"].tolist(), k=n_medicos),
+    })
+
+    cids = [f"J{rng.integers(10,99)}.{rng.integers(0,9)}" for _ in range(n_proc)]
+    dim_procedimento = pd.DataFrame({
+        "id_proc":   new_ids(n_proc),
+        "nome":      [f"Procedimento {fake.word().capitalize()}" for _ in range(n_proc)],
+        "cid":       cids,
+        "categoria": random.choices(["Consulta","Exame","Cirurgia","Internação","Terapia"], k=n_proc),
+        "valor_sus": rng.uniform(20, 5000, n_proc).round(2),
+    })
+
+    dim_paciente = pd.DataFrame({
+        "id_paciente": new_ids(n_pacientes),
+        "nome":        [fake.name() for _ in range(n_pacientes)],
+        "cpf":         [fake.cpf()  for _ in range(n_pacientes)],
+        "sexo":        random.choices(["M","F"], k=n_pacientes),
+        "idade":       rng.integers(0, 100, n_pacientes),
+        "convenio":    random.choices(["SUS","Unimed","Bradesco Saúde","Amil","Particular"], k=n_pacientes),
+    })
+
+    fato = pd.DataFrame({
+        "id_atendimento": new_ids(n),
+        "id_data":        rand_dates(start, end, n),
+        "id_paciente":    random.choices(dim_paciente["id_paciente"].tolist(), k=n),
+        "id_medico":      random.choices(dim_medico["id_medico"].tolist(), k=n),
+        "id_proc":        random.choices(dim_procedimento["id_proc"].tolist(), k=n),
+        "id_unidade":     random.choices(dim_unidade["id_unidade"].tolist(), k=n),
+        "duracao_min":    rng.integers(15, 300, n),
+        "valor_cobrado":  rng.uniform(50, 8000, n).round(2),
+        "resultado":      random.choices(["Alta","Internado","Em acompanhamento","Óbito"],
+                                         weights=[70,15,12,3], k=n),
+    })
+
+    return {
+        "DimUnidade":      dim_unidade,
+        "DimMedico":       dim_medico,
+        "DimProcedimento": dim_procedimento,
+        "DimPaciente":     dim_paciente,
+        "FatoAtendimento": fato,
+        "dCalendario":     dcalendario(start, end),
+    }
+
+# ── TECNOLOGIA ───────────────────────────────────────────────────────────────
+def gerar_tecnologia(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_clientes = min(n, 2000)
+    n_produtos = 30
+    n_agentes  = 60
+
+    planos = ["Starter","Basic","Pro","Business","Enterprise"]
+    dim_produto = pd.DataFrame({
+        "id_produto": new_ids(n_produtos),
+        "nome":       [f"{fake.word().capitalize()} {p}" for p in random.choices(planos, k=n_produtos)],
+        "categoria":  random.choices(["SaaS","Licença","Suporte","Consultoria","Infraestrutura"], k=n_produtos),
+        "plano":      random.choices(planos, k=n_produtos),
+        "mrr":        rng.uniform(99, 9999, n_produtos).round(2),
+    })
+
+    dim_cliente = pd.DataFrame({
+        "id_cliente": new_ids(n_clientes),
+        "empresa":    [fake.company() for _ in range(n_clientes)],
+        "cnpj":       [fake.cnpj() for _ in range(n_clientes)],
+        "setor":      random.choices(["Varejo","Indústria","Serviços","Saúde","Financeiro"], k=n_clientes),
+        "tamanho":    random.choices(["MEI","ME","EPP","Médio","Grande"], k=n_clientes),
+        "uf":         random.choices(["SP","RJ","MG","RS","PR"], k=n_clientes),
+    })
+
+    dim_agente = pd.DataFrame({
+        "id_agente": new_ids(n_agentes),
+        "nome":      [fake.name() for _ in range(n_agentes)],
+        "area":      random.choices(["Comercial","CS","Suporte N1","Suporte N2","Implantação"], k=n_agentes),
+        "nivel":     random.choices(["Jr","Pl","Sr"], k=n_agentes),
+    })
+
+    fato = pd.DataFrame({
+        "id_contrato": new_ids(n),
+        "id_data":     rand_dates(start, end, n),
+        "id_cliente":  random.choices(dim_cliente["id_cliente"].tolist(), k=n),
+        "id_produto":  random.choices(dim_produto["id_produto"].tolist(), k=n),
+        "id_agente":   random.choices(dim_agente["id_agente"].tolist(), k=n),
+        "tipo":        random.choices(["Novo","Renovação","Upgrade","Downgrade","Churn"], k=n),
+        "valor_mrr":   rng.uniform(99, 9999, n).round(2),
+        "arr":         rng.uniform(1188, 119988, n).round(2),
+        "nps":         rng.integers(0, 11, n),
+        "status":      random.choices(["Ativo","Cancelado","Trial","Suspenso"], weights=[70,15,10,5], k=n),
+    })
+
+    return {
+        "DimProduto":  dim_produto,
+        "DimCliente":  dim_cliente,
+        "DimAgente":   dim_agente,
+        "FatoContrato":fato,
+        "dCalendario": dcalendario(start, end),
+    }
+
+# ── EDUCAÇÃO ─────────────────────────────────────────────────────────────────
+def gerar_educacao(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_alunos  = min(n, 5000)
+    n_cursos  = 60
+    n_instrutores = 40
+
+    dim_curso = pd.DataFrame({
+        "id_curso":    new_ids(n_cursos),
+        "nome":        [f"Curso de {fake.word().capitalize()}" for _ in range(n_cursos)],
+        "modalidade":  random.choices(["EAD","Presencial","Híbrido"], k=n_cursos),
+        "area":        random.choices(["TI","Saúde","Gestão","Direito","Engenharia","Design"], k=n_cursos),
+        "carga_horas": random.choices([40,60,80,120,200,360,400], k=n_cursos),
+        "valor":       rng.uniform(200, 5000, n_cursos).round(2),
+    })
+
+    dim_aluno = pd.DataFrame({
+        "id_aluno": new_ids(n_alunos),
+        "nome":     [fake.name() for _ in range(n_alunos)],
+        "cpf":      [fake.cpf()  for _ in range(n_alunos)],
+        "email":    [fake.email() for _ in range(n_alunos)],
+        "sexo":     random.choices(["M","F","Outro"], weights=[47,50,3], k=n_alunos),
+        "uf":       random.choices(["SP","RJ","MG","RS","PR","BA","CE"], k=n_alunos),
+        "faixa_etaria": random.choices(["15-17","18-24","25-34","35-44","45+"], k=n_alunos),
+    })
+
+    dim_instrutor = pd.DataFrame({
+        "id_instrutor": new_ids(n_instrutores),
+        "nome":         [fake.name() for _ in range(n_instrutores)],
+        "titulacao":    random.choices(["Graduado","Especialista","Mestre","Doutor"], k=n_instrutores),
+        "area":         random.choices(["TI","Saúde","Gestão","Direito","Engenharia","Design"], k=n_instrutores),
+    })
+
+    fato = pd.DataFrame({
+        "id_matricula":  new_ids(n),
+        "id_data":       rand_dates(start, end, n),
+        "id_aluno":      random.choices(dim_aluno["id_aluno"].tolist(), k=n),
+        "id_curso":      random.choices(dim_curso["id_curso"].tolist(), k=n),
+        "id_instrutor":  random.choices(dim_instrutor["id_instrutor"].tolist(), k=n),
+        "forma_pagamento": random.choices(["Boleto","Cartão","PIX","Financiamento"], k=n),
+        "valor_pago":    rng.uniform(200, 5000, n).round(2),
+        "nota_final":    rng.uniform(0, 10, n).round(1),
+        "concluiu":      random.choices([1, 0], weights=[65, 35], k=n),
+        "status":        random.choices(["Ativo","Concluído","Trancado","Cancelado"], weights=[40,35,15,10], k=n),
+    })
+
+    return {
+        "DimCurso":     dim_curso,
+        "DimAluno":     dim_aluno,
+        "DimInstrutor": dim_instrutor,
+        "FatoMatricula":fato,
+        "dCalendario":  dcalendario(start, end),
+    }
+
+# ── LOGÍSTICA ────────────────────────────────────────────────────────────────
+def gerar_logistica(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_trans    = 20
+    n_clientes = min(n, 2000)
+    n_rotas    = 50
+
+    ufs = ["SP","RJ","MG","RS","PR","SC","BA","CE","PE","GO"]
+    dim_transportadora = pd.DataFrame({
+        "id_transportadora": new_ids(n_trans),
+        "nome":              [f"Transportadora {fake.last_name()}" for _ in range(n_trans)],
+        "cnpj":              [fake.cnpj() for _ in range(n_trans)],
+        "tipo":              random.choices(["Rodoviário","Aéreo","Marítimo","Expresso"], k=n_trans),
+        "uf_sede":           random.choices(ufs, k=n_trans),
+    })
+
+    dim_rota = pd.DataFrame({
+        "id_rota":    new_ids(n_rotas),
+        "origem_uf":  random.choices(ufs, k=n_rotas),
+        "destino_uf": random.choices(ufs, k=n_rotas),
+        "distancia_km": rng.integers(50, 4000, n_rotas),
+        "prazo_dias":   rng.integers(1, 15, n_rotas),
+    })
+
+    dim_cliente = pd.DataFrame({
+        "id_cliente": new_ids(n_clientes),
+        "empresa":    [fake.company() for _ in range(n_clientes)],
+        "cnpj":       [fake.cnpj() for _ in range(n_clientes)],
+        "segmento":   random.choices(["Varejo","Indústria","E-commerce","Atacado"], k=n_clientes),
+        "uf":         random.choices(ufs, k=n_clientes),
+    })
+
+    fato = pd.DataFrame({
+        "id_entrega":        new_ids(n),
+        "id_data":           rand_dates(start, end, n),
+        "id_transportadora": random.choices(dim_transportadora["id_transportadora"].tolist(), k=n),
+        "id_rota":           random.choices(dim_rota["id_rota"].tolist(), k=n),
+        "id_cliente":        random.choices(dim_cliente["id_cliente"].tolist(), k=n),
+        "peso_kg":           rng.uniform(0.1, 2000, n).round(2),
+        "volume_m3":         rng.uniform(0.01, 50, n).round(3),
+        "valor_frete":       rng.uniform(15, 5000, n).round(2),
+        "prazo_acordado":    rng.integers(1, 15, n),
+        "dias_entregue":     rng.integers(1, 20, n),
+        "status":            random.choices(["Entregue","Em trânsito","Atrasado","Devolvido"],
+                                            weights=[65,20,10,5], k=n),
+    })
+
+    return {
+        "DimTransportadora": dim_transportadora,
+        "DimRota":           dim_rota,
+        "DimCliente":        dim_cliente,
+        "FatoEntrega":       fato,
+        "dCalendario":       dcalendario(start, end),
+    }
+
+# ── ENERGIA ──────────────────────────────────────────────────────────────────
+def gerar_energia(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_consumidores = min(n, 5000)
+    n_medidores    = min(n, 5000)
+    n_subestacoes  = 20
+
+    dim_subestacao = pd.DataFrame({
+        "id_subestacao": new_ids(n_subestacoes),
+        "nome":          [f"SE {fake.city()}" for _ in range(n_subestacoes)],
+        "tensao_kv":     random.choices([13.8, 34.5, 69, 138, 230, 440], k=n_subestacoes),
+        "uf":            random.choices(["SP","MG","RJ","RS","PR"], k=n_subestacoes),
+    })
+
+    dim_consumidor = pd.DataFrame({
+        "id_consumidor": new_ids(n_consumidores),
+        "nome":          [fake.name() for _ in range(n_consumidores)],
+        "cpf_cnpj":      [fake.cpf() for _ in range(n_consumidores)],
+        "classe":        random.choices(["Residencial","Comercial","Industrial","Rural","Poder Público"],
+                                        weights=[55,25,10,5,5], k=n_consumidores),
+        "subclasse":     random.choices(["Normal","BT","AT","MT"], k=n_consumidores),
+        "uf":            random.choices(["SP","MG","RJ","RS","PR"], k=n_consumidores),
+    })
+
+    dim_medidor = pd.DataFrame({
+        "id_medidor":    new_ids(n_medidores),
+        "serial":        [f"MED{rng.integers(100000,999999)}" for _ in range(n_medidores)],
+        "modelo":        random.choices(["LANDIS+GYR","ELSTER","ITRON","SCHNEIDER"], k=n_medidores),
+        "id_consumidor": random.choices(dim_consumidor["id_consumidor"].tolist(), k=n_medidores),
+        "id_subestacao": random.choices(dim_subestacao["id_subestacao"].tolist(), k=n_medidores),
+    })
+
+    consumo = rng.uniform(50, 5000, n).round(2)
+    fato = pd.DataFrame({
+        "id_leitura":    new_ids(n),
+        "id_data":       rand_dates(start, end, n),
+        "id_medidor":    random.choices(dim_medidor["id_medidor"].tolist(), k=n),
+        "id_consumidor": random.choices(dim_consumidor["id_consumidor"].tolist(), k=n),
+        "id_subestacao": random.choices(dim_subestacao["id_subestacao"].tolist(), k=n),
+        "consumo_kwh":   consumo,
+        "demanda_kw":    rng.uniform(5, 500, n).round(2),
+        "tarifa_kwh":    rng.uniform(0.6, 1.5, n).round(4),
+        "valor_fatura":  (consumo * rng.uniform(0.6, 1.5, n)).round(2),
+        "tensao_v":      rng.uniform(210, 240, n).round(1),
+        "fator_potencia":rng.uniform(0.85, 1.0, n).round(3),
+    })
+
+    return {
+        "DimSubestacao": dim_subestacao,
+        "DimConsumidor": dim_consumidor,
+        "DimMedidor":    dim_medidor,
+        "FatoConsumo":   fato,
+        "dCalendario":   dcalendario(start, end),
+    }
+
+# ── TELECOM ──────────────────────────────────────────────────────────────────
+def gerar_telecom(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_assinantes = min(n, 5000)
+    n_planos     = 20
+    n_torres     = 50
+
+    dim_plano = pd.DataFrame({
+        "id_plano":    new_ids(n_planos),
+        "nome":        [f"Plano {p} {d}" for p, d in
+                        zip(random.choices(["Básico","Plus","Max","Ultra","Ilimitado"], k=n_planos),
+                            random.choices(["Móvel","Fixo","Combo","Empresarial"], k=n_planos))],
+        "tipo":        random.choices(["Pré-pago","Pós-pago","Controle","Empresarial"], k=n_planos),
+        "dados_gb":    random.choices([5, 10, 15, 20, 30, 50, 100, 0], k=n_planos),
+        "valor_mensal":rng.uniform(29.9, 299.9, n_planos).round(2),
+    })
+
+    dim_torre = pd.DataFrame({
+        "id_torre": new_ids(n_torres),
+        "codigo":   [f"ERB-{rng.integers(1000,9999)}" for _ in range(n_torres)],
+        "tecnologia":random.choices(["2G","3G","4G","5G"], weights=[5,10,60,25], k=n_torres),
+        "uf":       random.choices(["SP","RJ","MG","RS","PR","BA"], k=n_torres),
+        "capacidade_canais": rng.integers(50, 500, n_torres),
+    })
+
+    dim_assinante = pd.DataFrame({
+        "id_assinante": new_ids(n_assinantes),
+        "nome":         [fake.name() for _ in range(n_assinantes)],
+        "cpf":          [fake.cpf()  for _ in range(n_assinantes)],
+        "ddd":          [str(random.choice([11,21,31,41,51,61,71,81,85,91])) for _ in range(n_assinantes)],
+        "id_plano":     random.choices(dim_plano["id_plano"].tolist(), k=n_assinantes),
+        "uf":           random.choices(["SP","RJ","MG","RS","PR","BA"], k=n_assinantes),
+    })
+
+    fato = pd.DataFrame({
+        "id_chamada":    new_ids(n),
+        "id_data":       rand_dates(start, end, n),
+        "id_assinante":  random.choices(dim_assinante["id_assinante"].tolist(), k=n),
+        "id_plano":      random.choices(dim_plano["id_plano"].tolist(), k=n),
+        "id_torre":      random.choices(dim_torre["id_torre"].tolist(), k=n),
+        "tipo":          random.choices(["Voz","SMS","Dados","VoIP","Roaming"], k=n),
+        "duracao_seg":   rng.integers(0, 3600, n),
+        "dados_mb":      rng.uniform(0, 2000, n).round(2),
+        "valor_cobrado": rng.uniform(0, 50, n).round(2),
+        "qualidade_dbm": rng.integers(-110, -60, n),
+    })
+
+    return {
+        "DimPlano":     dim_plano,
+        "DimTorre":     dim_torre,
+        "DimAssinante": dim_assinante,
+        "FatoChamada":  fato,
+        "dCalendario":  dcalendario(start, end),
+    }
+
+# ── INDÚSTRIA ────────────────────────────────────────────────────────────────
+def gerar_industria(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_maquinas = 30
+    n_insumos  = 60
+    n_produtos = 40
+    n_operadores = 50
+
+    dim_maquina = pd.DataFrame({
+        "id_maquina": new_ids(n_maquinas),
+        "nome":       [f"Máquina {fake.word().upper()}-{i}" for i in range(1, n_maquinas+1)],
+        "tipo":       random.choices(["Torno","Fresadora","Prensa","Injetora","CNC","Soldadora","Estampadora"], k=n_maquinas),
+        "linha":      random.choices(["Linha A","Linha B","Linha C","Linha D"], k=n_maquinas),
+        "capacidade_h":rng.integers(100, 2000, n_maquinas),
+        "ano_fab":    rng.integers(2000, 2023, n_maquinas),
+    })
+
+    dim_insumo = pd.DataFrame({
+        "id_insumo":  new_ids(n_insumos),
+        "nome":       [f"Insumo {fake.word().capitalize()}" for _ in range(n_insumos)],
+        "tipo":       random.choices(["Matéria-Prima","Embalagem","Componente","Químico","Combustível"], k=n_insumos),
+        "unidade":    random.choices(["kg","ton","litro","unidade","metro"], k=n_insumos),
+        "custo_unit": rng.uniform(1, 500, n_insumos).round(2),
+    })
+
+    dim_produto = pd.DataFrame({
+        "id_produto": new_ids(n_produtos),
+        "nome":       [f"Produto {fake.word().upper()}-{i}" for i in range(1, n_produtos+1)],
+        "familia":    random.choices(["Família A","Família B","Família C"], k=n_produtos),
+        "peso_kg":    rng.uniform(0.1, 100, n_produtos).round(2),
+        "preco_venda":rng.uniform(50, 10000, n_produtos).round(2),
+    })
+
+    dim_operador = pd.DataFrame({
+        "id_operador": new_ids(n_operadores),
+        "nome":        [fake.name() for _ in range(n_operadores)],
+        "turno":       random.choices(["Manhã","Tarde","Noite"], k=n_operadores),
+        "nivel":       random.choices(["Operador I","Operador II","Técnico","Supervisor"], k=n_operadores),
+    })
+
+    qtd = rng.integers(1, 500, n)
+    fato = pd.DataFrame({
+        "id_ordem":    new_ids(n),
+        "id_data":     rand_dates(start, end, n),
+        "id_maquina":  random.choices(dim_maquina["id_maquina"].tolist(), k=n),
+        "id_insumo":   random.choices(dim_insumo["id_insumo"].tolist(), k=n),
+        "id_produto":  random.choices(dim_produto["id_produto"].tolist(), k=n),
+        "id_operador": random.choices(dim_operador["id_operador"].tolist(), k=n),
+        "quantidade":  qtd,
+        "tempo_ciclo_min": rng.uniform(1, 480, n).round(1),
+        "refugo_pct":  rng.uniform(0, 0.15, n).round(4),
+        "custo_producao": rng.uniform(100, 50000, n).round(2),
+        "oee":         rng.uniform(0.5, 0.98, n).round(3),
+        "turno":       random.choices(["Manhã","Tarde","Noite"], k=n),
+    })
+
+    return {
+        "DimMaquina":  dim_maquina,
+        "DimInsumo":   dim_insumo,
+        "DimProduto":  dim_produto,
+        "DimOperador": dim_operador,
+        "FatoProducao":fato,
+        "dCalendario": dcalendario(start, end),
+    }
+
+# ── AGRONEGÓCIO ──────────────────────────────────────────────────────────────
+def gerar_agronegocio(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
+    n_propriedades = min(n // 5 + 50, 500)
+    n_culturas     = 20
+    n_insumos      = 40
+    n_clientes     = min(n, 1000)
+
+    culturas_nomes = ["Soja","Milho","Cana-de-açúcar","Algodão","Café","Trigo",
+                      "Arroz","Feijão","Laranja","Eucalipto","Sorgo","Girassol",
+                      "Amendoim","Mandioca","Cacau","Mamona","Canola","Aveia","Cevada","Fumo"]
+    dim_cultura = pd.DataFrame({
+        "id_cultura":   new_ids(n_culturas),
+        "nome":         culturas_nomes,
+        "tipo":         random.choices(["Grão","Fibra","Fruta","Hortaliça","Energia"], k=n_culturas),
+        "ciclo_dias":   rng.integers(60, 365, n_culturas),
+        "preco_ton":    rng.uniform(500, 8000, n_culturas).round(2),
+    })
+
+    ufs_agro = ["MT","MS","GO","SP","PR","RS","SC","MG","BA","PI"]
+    dim_propriedade = pd.DataFrame({
+        "id_propriedade": new_ids(n_propriedades),
+        "nome":           [f"Fazenda {fake.last_name()}" for _ in range(n_propriedades)],
+        "cnpj_cpf":       [fake.cpf() for _ in range(n_propriedades)],
+        "area_ha":        rng.uniform(10, 50000, n_propriedades).round(1),
+        "uf":             random.choices(ufs_agro, k=n_propriedades),
+        "bioma":          random.choices(["Cerrado","Amazônia","Mata Atlântica","Pampa","Pantanal"], k=n_propriedades),
+        "tipo":           random.choices(["Familiar","Empresarial","Cooperativa"], k=n_propriedades),
+    })
+
+    dim_insumo = pd.DataFrame({
+        "id_insumo": new_ids(n_insumos),
+        "nome":      [f"Insumo {fake.word().capitalize()}" for _ in range(n_insumos)],
+        "tipo":      random.choices(["Fertilizante","Defensivo","Semente","Combustível","Irrigação"], k=n_insumos),
+        "unidade":   random.choices(["kg","litro","saco","dose"], k=n_insumos),
+        "custo_unit":rng.uniform(10, 2000, n_insumos).round(2),
+    })
+
+    area_plantada = rng.uniform(5, 5000, n).round(1)
+    prod_por_ha   = rng.uniform(1, 10, n).round(2)
+    fato = pd.DataFrame({
+        "id_safra":        new_ids(n),
+        "id_data":         rand_dates(start, end, n),
+        "id_propriedade":  random.choices(dim_propriedade["id_propriedade"].tolist(), k=n),
+        "id_cultura":      random.choices(dim_cultura["id_cultura"].tolist(), k=n),
+        "id_insumo":       random.choices(dim_insumo["id_insumo"].tolist(), k=n),
+        "area_plantada_ha":area_plantada,
+        "produtividade_tha":prod_por_ha,
+        "producao_ton":    (area_plantada * prod_por_ha).round(2),
+        "custo_ha":        rng.uniform(500, 8000, n).round(2),
+        "receita":         rng.uniform(1000, 500000, n).round(2),
+        "indice_chuva_mm": rng.uniform(0, 300, n).round(1),
+        "temperatura_media":rng.uniform(15, 35, n).round(1),
+        "status":          random.choices(["Colhida","Em andamento","Planejada","Perdida"],
+                                          weights=[50,30,15,5], k=n),
+    })
+
+    return {
+        "DimCultura":     dim_cultura,
+        "DimPropriedade": dim_propriedade,
+        "DimInsumo":      dim_insumo,
+        "FatoSafra":      fato,
+        "dCalendario":    dcalendario(start, end),
+    }
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  MAPA DE SETORES
+# ═══════════════════════════════════════════════════════════════════════════
+SETORES = {
+    "🛒 Varejo":          gerar_varejo,
+    "💰 Financeiro":      gerar_financeiro,
+    "🏥 Saúde":           gerar_saude,
+    "💻 Tecnologia":      gerar_tecnologia,
+    "📚 Educação":        gerar_educacao,
+    "🚚 Logística":       gerar_logistica,
+    "⚡ Energia":          gerar_energia,
+    "📡 Telecom":         gerar_telecom,
+    "🏭 Indústria":       gerar_industria,
+    "🌾 Agronegócio":     gerar_agronegocio,
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  INTERFACE STREAMLIT
+# ═══════════════════════════════════════════════════════════════════════════
+st.markdown("""
 <style>
-/* ══════════════════════════════════════
-   TOKENS
-══════════════════════════════════════ */
-:root {
-  --bg:        #060912;
-  --bg2:       #090d1a;
-  --surface:   #0d1120;
-  --surface2:  #111828;
-  --border:    rgba(0,180,216,.12);
-  --border2:   rgba(0,180,216,.22);
-  --border3:   rgba(0,180,216,.4);
-  --cyan:      #00b4d8;
-  --cyan2:     #0096c7;
-  --cyan-dim:  rgba(0,180,216,.08);
-  --cyan-glow: rgba(0,180,216,.25);
-  --text:      #e8edf8;
-  --text2:     #8fa0bb;
-  --text3:     #4a5878;
-  --mono:      'JetBrains Mono', monospace;
-  --display:   'Syne', sans-serif;
-  --body:      'DM Sans', sans-serif;
-  --r:         14px;
-  --ease:      cubic-bezier(.22,1,.36,1);
-}
-
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--body);
-  font-size: 15px;
-  line-height: 1.65;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* dot grid */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(0,180,216,.12) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
-}
-
-/* grain */
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .35;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-}
-
-/* ══════════════════════════════════════
-   NAV
-══════════════════════════════════════ */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 48px;
-  background: rgba(6,9,18,.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-}
-.nav-logo {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--display); font-weight: 800; font-size: 1rem;
-  letter-spacing: -.02em; color: var(--text);
-}
-.nav-logo-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: linear-gradient(135deg, #00b4d8, #0077b6);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-}
-.nav-chip {
-  font-family: var(--mono); font-size: .65rem; letter-spacing: .1em;
-  color: var(--cyan); border: 1px solid var(--border2);
-  background: var(--cyan-dim); border-radius: 100px; padding: 3px 10px;
-}
-.nav-links { display: flex; align-items: center; gap: 32px; }
-.nav-link {
-  font-size: .82rem; color: var(--text2); text-decoration: none;
-  letter-spacing: .01em; transition: color .2s;
-}
-.nav-link:hover { color: var(--cyan); }
-.nav-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: linear-gradient(135deg, var(--cyan), var(--cyan2));
-  color: #001a24; font-family: var(--display); font-weight: 700;
-  font-size: .82rem; padding: 9px 22px; border-radius: 100px;
-  text-decoration: none; transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 0 24px var(--cyan-glow);
-}
-.nav-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 32px rgba(0,180,216,.45); }
-
-/* ══════════════════════════════════════
-   HERO
-══════════════════════════════════════ */
-.hero {
-  position: relative; z-index: 1;
-  padding: 160px 48px 120px;
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 80px; align-items: center;
-  max-width: 1300px; margin: 0 auto;
-}
-
-/* scan line animation */
-.hero::after {
-  content: '';
-  position: absolute; left: 0; right: 0;
-  height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  animation: scanLine 6s ease-in-out infinite;
-  opacity: .35; pointer-events: none;
-}
-@keyframes scanLine {
-  0%   { top: 10%; opacity: 0; }
-  10%  { opacity: .35; }
-  90%  { opacity: .35; }
-  100% { top: 90%; opacity: 0; }
-}
-
-.hero-left { position: relative; }
-
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--mono); font-size: .7rem; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--cyan);
-  border: 1px solid var(--border2); background: var(--cyan-dim);
-  border-radius: 100px; padding: 6px 14px; margin-bottom: 28px;
-  animation: fadeUp .6s .1s both;
-}
-.eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: breathe 2s infinite; }
-@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
-
-.hero h1 {
-  font-family: var(--display); font-size: clamp(2.6rem, 5vw, 4.2rem);
-  font-weight: 800; line-height: 1.02; letter-spacing: -.04em;
-  margin-bottom: 24px;
-  animation: fadeUp .65s .18s both;
-}
-.hero h1 .hl {
-  background: linear-gradient(120deg, var(--cyan) 0%, #48cae4 60%, #90e0ef 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-
-.hero-sub {
-  font-size: 1rem; color: var(--text2); max-width: 460px;
-  line-height: 1.75; font-weight: 300; margin-bottom: 40px;
-  animation: fadeUp .65s .26s both;
-}
-
-.hero-cta-row {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  animation: fadeUp .65s .34s both;
-}
-.btn-primary {
-  display: inline-flex; align-items: center; gap: 9px;
-  background: linear-gradient(135deg, var(--cyan), var(--cyan2));
-  color: #001a24; font-family: var(--display); font-weight: 700; font-size: .9rem;
-  padding: 13px 28px; border-radius: 100px; text-decoration: none;
-  transition: transform .25s, box-shadow .25s;
-  box-shadow: 0 0 28px var(--cyan-glow);
-}
-.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 40px rgba(0,180,216,.5); }
-.btn-primary svg { width: 15px; height: 15px; transition: transform .2s; }
-.btn-primary:hover svg { transform: translateX(3px); }
-.btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  color: var(--text2); font-size: .86rem;
-  border: 1px solid var(--border2); border-radius: 100px;
-  padding: 13px 22px; text-decoration: none; transition: color .2s, border-color .2s;
-}
-.btn-ghost:hover { color: var(--cyan); border-color: var(--border3); }
-
-/* stat pills */
-.hero-stats {
-  display: flex; gap: 12px; margin-top: 48px; flex-wrap: wrap;
-  animation: fadeUp .65s .42s both;
-}
-.stat-pill {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px 18px;
-}
-.stat-val { font-family: var(--display); font-weight: 800; font-size: 1.2rem; color: var(--cyan); }
-.stat-lbl { font-size: .72rem; color: var(--text2); line-height: 1.3; }
-
-/* ── HERO RIGHT — terminal mockup ── */
-.hero-right {
-  position: relative;
-  animation: fadeUp .65s .22s both;
-}
-.terminal {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 16px; overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(0,180,216,.06);
-  position: relative;
-}
-.terminal::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.terminal-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 18px; background: rgba(0,0,0,.3);
-  border-bottom: 1px solid var(--border);
-}
-.t-dot { width: 10px; height: 10px; border-radius: 50%; }
-.t-title {
-  font-family: var(--mono); font-size: .72rem; color: var(--text2);
-  margin-left: 8px; flex: 1;
-}
-.t-status {
-  font-family: var(--mono); font-size: .65rem; color: var(--cyan);
-  background: var(--cyan-dim); border: 1px solid var(--border2);
-  border-radius: 100px; padding: 2px 10px;
-}
-.terminal-body { padding: 20px 22px; }
-.t-line {
-  font-family: var(--mono); font-size: .76rem; line-height: 1.9;
-  display: flex; align-items: baseline; gap: 10px;
-}
-.t-prompt { color: var(--cyan); user-select: none; }
-.t-cmd    { color: #e8edf8; }
-.t-out    { color: var(--text2); padding-left: 20px; }
-.t-key    { color: #7dd3fc; }
-.t-val    { color: #86efac; }
-.t-sep    { color: var(--text3); }
-.t-table  { color: #fbbf24; }
-.t-num    { color: var(--cyan); }
-.cursor {
-  display: inline-block; width: 8px; height: 14px;
-  background: var(--cyan); vertical-align: middle;
-  animation: blink 1.2s step-end infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-/* progress bar inside terminal */
-.t-progress-row { margin: 6px 0 4px 20px; }
-.t-progress-track {
-  height: 3px; background: rgba(0,180,216,.12); border-radius: 3px; overflow: hidden;
-}
-.t-progress-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--cyan2), var(--cyan));
-  animation: loadBar 2.4s 1s both ease-out;
-}
-@keyframes loadBar { from{width:0} to{width:100%} }
-
-/* ══════════════════════════════════════
-   LOGOS STRIP
-══════════════════════════════════════ */
-.strip {
-  position: relative; z-index: 1;
-  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-  padding: 28px 48px; text-align: center;
-  background: linear-gradient(to bottom, var(--bg2), var(--bg));
-}
-.strip-label {
-  font-family: var(--mono); font-size: .65rem; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--text3); margin-bottom: 18px;
-}
-.strip-row {
-  display: flex; align-items: center; justify-content: center;
-  gap: 10px; flex-wrap: wrap;
-}
-.sector-tag {
-  font-family: var(--mono); font-size: .7rem; color: var(--text2);
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 8px; padding: 6px 14px;
-  transition: color .2s, border-color .2s, background .2s;
-  cursor: default;
-}
-.sector-tag:hover { color: var(--cyan); border-color: var(--border2); background: var(--cyan-dim); }
-
-/* ══════════════════════════════════════
-   STAR SCHEMA DIAGRAM
-══════════════════════════════════════ */
-.schema-section {
-  position: relative; z-index: 1;
-  padding: 100px 48px; max-width: 1300px; margin: 0 auto;
-}
-.section-header { text-align: center; margin-bottom: 72px; }
-.section-eyebrow {
-  font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--cyan); margin-bottom: 14px;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.section-eyebrow::before, .section-eyebrow::after {
-  content: ''; flex: 1; max-width: 48px; height: 1px; background: rgba(0,180,216,.3);
-}
-.section-header h2 {
-  font-family: var(--display); font-size: clamp(1.8rem, 3.5vw, 2.8rem);
-  font-weight: 800; letter-spacing: -.03em; line-height: 1.1; margin-bottom: 14px;
-}
-.section-header p { color: var(--text2); font-size: .95rem; max-width: 480px; margin: 0 auto; font-weight: 300; }
-
-/* schema diagram */
-.schema-diagram {
-  position: relative; max-width: 760px; margin: 0 auto;
-  height: 420px;
-}
-
-/* fact table — center */
-.schema-fact {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: linear-gradient(135deg, rgba(0,180,216,.18), rgba(0,119,182,.1));
-  border: 1.5px solid var(--cyan); border-radius: 14px;
-  padding: 20px 28px; text-align: center; z-index: 2;
-  box-shadow: 0 0 40px rgba(0,180,216,.2);
-  min-width: 160px;
-}
-.schema-fact-label {
-  font-family: var(--mono); font-size: .65rem; color: var(--cyan);
-  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px;
-}
-.schema-fact-name {
-  font-family: var(--display); font-weight: 800; font-size: 1rem; color: #fff;
-}
-.schema-fact-cols {
-  margin-top: 10px; display: flex; flex-direction: column; gap: 3px;
-}
-.schema-fact-col {
-  font-family: var(--mono); font-size: .62rem; color: var(--text2);
-  background: rgba(0,180,216,.06); border-radius: 4px; padding: 2px 8px;
-  text-align: left;
-}
-.schema-fact-col.fk { color: var(--cyan); }
-
-/* dim tables */
-.schema-dim {
-  position: absolute; z-index: 2;
-  background: var(--surface2); border: 1px solid var(--border2);
-  border-radius: 12px; padding: 14px 18px; min-width: 130px;
-  transition: border-color .3s, box-shadow .3s;
-}
-.schema-dim:hover { border-color: var(--border3); box-shadow: 0 0 24px var(--cyan-glow); }
-.schema-dim-label {
-  font-family: var(--mono); font-size: .58rem; color: var(--text3);
-  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 5px;
-}
-.schema-dim-name {
-  font-family: var(--display); font-weight: 700; font-size: .82rem; color: var(--text);
-  margin-bottom: 8px;
-}
-.schema-dim-cols { display: flex; flex-direction: column; gap: 2px; }
-.schema-dim-col {
-  font-family: var(--mono); font-size: .58rem; color: var(--text2);
-  background: var(--surface); border-radius: 3px; padding: 2px 7px;
-}
-.schema-dim-col.pk { color: #fbbf24; }
-
-/* connector lines via SVG */
-.schema-svg {
-  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;
-}
-.conn-line {
-  stroke: var(--cyan); stroke-width: 1; fill: none; stroke-dasharray: 4 4;
-  animation: dashFlow 3s linear infinite;
-}
-@keyframes dashFlow { to { stroke-dashoffset: -24; } }
-
-/* dim positions */
-.dim-top    { top: 10px;  left: 50%; transform: translateX(-50%); }
-.dim-right  { top: 50%;  right: 10px; transform: translateY(-50%); }
-.dim-bottom { bottom: 10px; left: 50%; transform: translateX(-50%); }
-.dim-left   { top: 50%;  left: 10px; transform: translateY(-50%); }
-.dim-tr     { top: 30px;  right: 60px; }
-.dim-tl     { top: 30px;  left: 60px; }
-
-/* ══════════════════════════════════════
-   FEATURES GRID
-══════════════════════════════════════ */
-.features-section {
-  position: relative; z-index: 1;
-  padding: 100px 48px; max-width: 1300px; margin: 0 auto;
-}
-.features-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 20px; margin-top: 64px;
-}
-.feature-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 32px;
-  position: relative; overflow: hidden;
-  transition: border-color .3s, transform .3s var(--ease), box-shadow .3s;
-}
-.feature-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  transform: scaleX(0); transform-origin: left;
-  transition: transform .4s var(--ease);
-}
-.feature-card:hover { transform: translateY(-5px); border-color: var(--border2); box-shadow: 0 16px 48px rgba(0,0,0,.35); }
-.feature-card:hover::before { transform: scaleX(1); }
-
-.feature-icon {
-  width: 46px; height: 46px; border-radius: 12px;
-  background: var(--cyan-dim); border: 1px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; margin-bottom: 20px;
-  transition: box-shadow .3s;
-}
-.feature-card:hover .feature-icon { box-shadow: 0 0 20px var(--cyan-glow); }
-.feature-title {
-  font-family: var(--display); font-weight: 700; font-size: 1rem;
-  letter-spacing: -.015em; margin-bottom: 10px;
-}
-.feature-text { font-size: .84rem; color: var(--text2); line-height: 1.75; font-weight: 300; }
-.feature-mono {
-  margin-top: 14px; font-family: var(--mono); font-size: .68rem;
-  color: var(--cyan); background: var(--cyan-dim); border: 1px solid var(--border);
-  border-radius: 6px; padding: 6px 10px; display: inline-block;
-}
-
-/* ══════════════════════════════════════
-   CALENDAR SECTION
-══════════════════════════════════════ */
-.calendar-section {
-  position: relative; z-index: 1;
-  padding: 100px 48px;
-  background: linear-gradient(to bottom, var(--bg), var(--bg2) 40%, var(--bg2) 60%, var(--bg));
-}
-.calendar-inner { max-width: 1100px; margin: 0 auto; }
-
-.cal-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 64px; align-items: center; margin-top: 64px;
-}
-.cal-text h3 {
-  font-family: var(--display); font-weight: 800;
-  font-size: clamp(1.5rem, 3vw, 2.2rem); letter-spacing: -.03em; line-height: 1.15;
-  margin-bottom: 16px;
-}
-.cal-text p { color: var(--text2); font-size: .9rem; line-height: 1.8; font-weight: 300; margin-bottom: 24px; }
-
-.col-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
-.col-item {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 16px;
-  transition: border-color .25s, background .25s;
-}
-.col-item:hover { border-color: var(--border2); background: var(--surface2); }
-.col-name { font-family: var(--mono); font-size: .78rem; color: var(--cyan); min-width: 90px; }
-.col-type {
-  font-family: var(--mono); font-size: .65rem; color: var(--text3);
-  background: rgba(0,180,216,.06); border-radius: 4px; padding: 2px 8px;
-}
-.col-desc { font-size: .78rem; color: var(--text2); font-weight: 300; }
-
-/* calendar table preview */
-.cal-table-wrap {
-  background: var(--surface); border: 1px solid var(--border2);
-  border-radius: var(--r); overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0,0,0,.4);
-  position: relative;
-}
-.cal-table-wrap::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.cal-table-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px; border-bottom: 1px solid var(--border);
-  background: rgba(0,0,0,.2);
-}
-.cal-table-title {
-  font-family: var(--mono); font-size: .72rem; color: var(--cyan);
-  display: flex; align-items: center; gap: 8px;
-}
-.cal-table-badge {
-  font-family: var(--mono); font-size: .6rem; color: var(--text2);
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 100px; padding: 2px 10px;
-}
-table { width: 100%; border-collapse: collapse; }
-th {
-  font-family: var(--mono); font-size: .62rem; color: var(--text3);
-  text-transform: uppercase; letter-spacing: .08em;
-  padding: 10px 14px; border-bottom: 1px solid var(--border);
-  text-align: left; background: rgba(0,0,0,.15);
-}
-td {
-  font-family: var(--mono); font-size: .72rem; padding: 9px 14px;
-  border-bottom: 1px solid rgba(0,180,216,.05); color: var(--text2);
-}
-td.td-date { color: var(--text); }
-td.td-num  { color: var(--cyan); }
-td.td-mes  { color: #86efac; }
-td.td-id   { color: #fbbf24; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(0,180,216,.03); }
-
-/* ══════════════════════════════════════
-   SECTORS CAROUSEL — HORIZONTAL SCROLL
-══════════════════════════════════════ */
-.sectors-section {
-  position: relative; z-index: 1; padding: 100px 0;
-  overflow: hidden;
-}
-.sectors-header { padding: 0 48px; margin-bottom: 56px; }
-.sectors-track-wrap { position: relative; }
-.sectors-track-wrap::before,
-.sectors-track-wrap::after {
-  content: ''; position: absolute; top: 0; bottom: 0; width: 120px; z-index: 2; pointer-events: none;
-}
-.sectors-track-wrap::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
-.sectors-track-wrap::after  { right: 0; background: linear-gradient(to left, var(--bg), transparent); }
-
-.sectors-track {
-  display: flex; gap: 16px; padding: 8px 48px;
-  overflow-x: auto; scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-.sectors-track::-webkit-scrollbar { display: none; }
-
-.sector-card {
-  flex-shrink: 0; scroll-snap-align: start;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 24px 28px; min-width: 220px;
-  transition: border-color .3s, transform .3s var(--ease), box-shadow .3s;
-  cursor: default;
-}
-.sector-card:hover {
-  border-color: var(--border2); transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,.3);
-}
-.sector-card-icon { font-size: 28px; margin-bottom: 14px; display: block; }
-.sector-card-name {
-  font-family: var(--display); font-weight: 700; font-size: .95rem;
-  margin-bottom: 6px; letter-spacing: -.01em;
-}
-.sector-card-hint { font-size: .76rem; color: var(--text2); font-weight: 300; }
-.sector-card-tables {
-  margin-top: 14px; display: flex; flex-direction: column; gap: 4px;
-}
-.sector-table-tag {
-  font-family: var(--mono); font-size: .62rem; color: var(--text3);
-  background: var(--surface2); border-radius: 4px; padding: 3px 8px;
-}
-
-/* ══════════════════════════════════════
-   HOW IT WORKS
-══════════════════════════════════════ */
-.how-section {
-  position: relative; z-index: 1;
-  padding: 100px 48px; max-width: 1100px; margin: 0 auto;
-}
-.steps-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 0; margin-top: 64px; position: relative;
-}
-.steps-grid::before {
-  content: '';
-  position: absolute; top: 28px; left: 10%; right: 10%; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border2), var(--border2), transparent);
-}
-.step {
-  text-align: center; padding: 0 16px; position: relative;
-}
-.step-num {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--surface2); border: 1px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--display); font-weight: 800; font-size: .9rem;
-  color: var(--cyan); margin: 0 auto 20px;
-  position: relative; z-index: 1;
-  transition: background .3s, box-shadow .3s;
-}
-.step:hover .step-num { background: var(--cyan-dim); box-shadow: 0 0 24px var(--cyan-glow); }
-.step-icon { font-size: 22px; display: block; margin-bottom: 12px; }
-.step-title {
-  font-family: var(--display); font-weight: 700; font-size: .9rem;
-  margin-bottom: 8px; letter-spacing: -.01em;
-}
-.step-text { font-size: .78rem; color: var(--text2); line-height: 1.65; font-weight: 300; }
-
-/* ══════════════════════════════════════
-   CTA SECTION
-══════════════════════════════════════ */
-.cta-section {
-  position: relative; z-index: 1;
-  padding: 100px 48px 120px; text-align: center;
-}
-.cta-glow {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,180,216,.07) 0%, transparent 65%);
-}
-.cta-box {
-  max-width: 620px; margin: 0 auto;
-  background: var(--surface); border: 1px solid var(--border2);
-  border-radius: 24px; padding: 64px 56px; position: relative; overflow: hidden;
-}
-.cta-box::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.cta-tag {
-  font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--cyan); margin-bottom: 20px;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.cta-tag::before,.cta-tag::after { content:''; flex:1; max-width:40px; height:1px; background:rgba(0,180,216,.3); }
-.cta-box h2 {
-  font-family: var(--display); font-size: clamp(1.6rem,4vw,2.4rem);
-  font-weight: 800; letter-spacing: -.03em; line-height: 1.08; margin-bottom: 16px;
-}
-.cta-box > p { color: var(--text2); font-size: .9rem; line-height: 1.75; max-width: 400px; margin: 0 auto 36px; font-weight: 300; }
-.cta-form { display: flex; gap: 10px; max-width: 400px; margin: 0 auto; }
-.cta-input {
-  flex: 1; background: var(--bg2); border: 1px solid var(--border2);
-  color: var(--text); font-family: var(--body); font-size: .88rem;
-  padding: 12px 18px; border-radius: 100px; outline: none;
-  transition: border-color .2s, box-shadow .2s;
-}
-.cta-input::placeholder { color: var(--text3); }
-.cta-input:focus { border-color: var(--border3); box-shadow: 0 0 0 3px rgba(0,180,216,.09); }
-.cta-btn {
-  background: linear-gradient(135deg, var(--cyan), var(--cyan2));
-  color: #001a24; font-family: var(--display); font-weight: 700; font-size: .85rem;
-  padding: 12px 24px; border-radius: 100px; border: none; cursor: pointer;
-  white-space: nowrap; transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 0 20px rgba(0,180,216,.3);
-}
-.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 32px rgba(0,180,216,.5); }
-.cta-fine { margin-top: 14px; font-size: .7rem; color: var(--text3); font-family: var(--mono); }
-
-/* ══════════════════════════════════════
-   FOOTER
-══════════════════════════════════════ */
-footer {
-  position: relative; z-index: 1;
-  border-top: 1px solid var(--border);
-  padding: 32px 48px;
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: .78rem; color: var(--text2);
-  background: var(--bg2);
-}
-.footer-logo { font-family: var(--display); font-weight: 800; font-size: .9rem; color: var(--cyan); }
-.footer-links { display: flex; gap: 28px; }
-.footer-link { color: var(--text2); text-decoration: none; transition: color .2s; }
-.footer-link:hover { color: var(--cyan); }
-.footer-mono { font-family: var(--mono); font-size: .68rem; color: var(--text3); }
-
-/* ══════════════════════════════════════
-   ANIMATIONS
-══════════════════════════════════════ */
-@keyframes fadeUp { to { opacity: 1; transform: none; } }
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
-.reveal.visible { opacity: 1; transform: none; }
-
-/* ══════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════ */
-@media (max-width: 960px) {
-  nav { padding: 14px 24px; }
-  .nav-links { display: none; }
-  .hero { grid-template-columns: 1fr; gap: 48px; padding: 120px 24px 80px; }
-  .hero-right { display: none; }
-  .strip { padding: 24px; }
-  .schema-section, .features-section, .how-section { padding: 64px 24px; }
-  .features-grid { grid-template-columns: 1fr; }
-  .steps-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-  .steps-grid::before { display: none; }
-  .cal-grid { grid-template-columns: 1fr; gap: 40px; }
-  .calendar-section { padding: 64px 24px; }
-  .sectors-header { padding: 0 24px; }
-  .cta-section { padding: 64px 24px 80px; }
-  .cta-box { padding: 44px 28px; }
-  .cta-form { flex-direction: column; }
-  footer { flex-direction: column; gap: 16px; text-align: center; padding: 28px 24px; }
-}
+    .main-title { font-size: 2.4rem; font-weight: 800; margin-bottom: .2rem; }
+    .sub-title  { color: #8fa0bb; font-size: 1rem; margin-bottom: 1.5rem; }
+    .metric-label { font-size: .75rem; color: #8fa0bb; }
+    .metric-value { font-size: 1.4rem; font-weight: 800; color: #00b4d8; }
 </style>
-</head>
-<body>
+""", unsafe_allow_html=True)
 
-<!-- ══ NAV ══ -->
-<nav>
-  <div class="nav-logo">
-    <div class="nav-logo-icon">📊</div>
-    BI Data Generator
-    <span class="nav-chip">PRO</span>
-  </div>
-  <div class="nav-links">
-    <a href="#schema" class="nav-link">Star Schema</a>
-    <a href="#calendario" class="nav-link">dCalendario</a>
-    <a href="#setores" class="nav-link">Setores</a>
-    <a href="#como" class="nav-link">Como usar</a>
-  </div>
-  <a href="https://bi-data-generator.streamlit.app" class="nav-cta" target="_blank">
-    Abrir app
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-  </a>
-</nav>
+# ── sidebar ─────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## ⚙️ Configurações")
+    st.markdown("---")
 
-<!-- ══ HERO ══ -->
-<section class="hero">
-  <div class="hero-left">
-    <div class="hero-eyebrow"><span class="eyebrow-dot"></span> Star Schema · 10 Setores · dCalendario</div>
-    <h1>Dados reais para<br>seu projeto de <span class="hl">Business<br>Intelligence</span></h1>
-    <p class="hero-sub">
-      Gere bases profissionais no modelo estrela em segundos. Tabelas fato, dimensões e dCalendario prontos para Power BI, Tableau e qualquer ferramenta de BI.
-    </p>
-    <div class="hero-cta-row">
-      <a href="https://bi-data-generator.streamlit.app" class="btn-primary" target="_blank">
-        Gerar minha base agora
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-      </a>
-      <a href="#schema" class="btn-ghost">Ver estrutura</a>
-    </div>
-    <div class="hero-stats">
-      <div class="stat-pill">
-        <span class="stat-val">10</span>
-        <span class="stat-lbl">setores<br>disponíveis</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-val">10k</span>
-        <span class="stat-lbl">linhas<br>máximo</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-val">.zip</span>
-        <span class="stat-lbl">download<br>completo</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-val">free</span>
-        <span class="stat-lbl">sem<br>cadastro</span>
-      </div>
-    </div>
-  </div>
+    setor = st.selectbox("**Setor**", list(SETORES.keys()))
 
-  <!-- terminal mockup -->
-  <div class="hero-right">
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="t-dot" style="background:#ff5f57"></div>
-        <div class="t-dot" style="background:#febc2e"></div>
-        <div class="t-dot" style="background:#28c840"></div>
-        <span class="t-title">bi_generator — python app.py</span>
-        <span class="t-status">● running</span>
-      </div>
-      <div class="terminal-body">
-        <div class="t-line"><span class="t-prompt">$</span><span class="t-cmd">gerar_base_completa(<span class="t-key">setor</span>=<span class="t-val">"Varejo"</span>, <span class="t-key">linhas</span>=<span class="t-num">5000</span>)</span></div>
-        <div class="t-line"><span class="t-out">→ Inicializando gerador...</span></div>
-        <div class="t-progress-row"><div class="t-progress-track"><div class="t-progress-fill" style="width:100%"></div></div></div>
-        <div class="t-line" style="margin-top:8px"><span class="t-out">✓ <span class="t-table">DimCliente</span> &nbsp;&nbsp;&nbsp; <span class="t-num">5.000</span> linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">DimProduto</span> &nbsp;&nbsp; <span class="t-num">500</span> &nbsp; linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">DimVendedor</span> &nbsp; <span class="t-num">50</span> &nbsp;&nbsp; linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">DimFilial</span> &nbsp;&nbsp;&nbsp; <span class="t-num">10</span> &nbsp;&nbsp; linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">DimGeografia</span> &nbsp;<span class="t-num">17</span> &nbsp;&nbsp; linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">FatoVendas</span> &nbsp;&nbsp; <span class="t-num">5.000</span> linhas</span></div>
-        <div class="t-line"><span class="t-out">✓ <span class="t-table">dCalendario</span> &nbsp;&nbsp; <span class="t-num">365</span> &nbsp;&nbsp; dias</span></div>
-        <div class="t-line" style="margin-top:10px"><span class="t-out" style="color:#86efac">✓ Base gerada — zipando arquivos...</span></div>
-        <div class="t-line"><span class="t-out" style="color:#86efac">✓ Base_BI_Varejo.zip pronto (2.1 MB)</span></div>
-        <div class="t-line" style="margin-top:8px"><span class="t-prompt">$</span><span class="cursor"></span></div>
-      </div>
-    </div>
-  </div>
-</section>
+    st.markdown("**Período**")
+    col1, col2 = st.columns(2)
+    with col1:
+        data_inicio = st.date_input("Início", value=date(2023, 1, 1))
+    with col2:
+        data_fim = st.date_input("Fim", value=date(2023, 12, 31))
 
-<!-- ══ SECTORS STRIP ══ -->
-<div class="strip reveal">
-  <div class="strip-label">setores disponíveis na versão atual</div>
-  <div class="strip-row">
-    <span class="sector-tag">🛒 Varejo</span>
-    <span class="sector-tag">💰 Financeiro</span>
-    <span class="sector-tag">🏥 Saúde</span>
-    <span class="sector-tag">💻 Tecnologia</span>
-    <span class="sector-tag">📚 Educação</span>
-    <span class="sector-tag">🚚 Logística</span>
-    <span class="sector-tag">⚡ Energia</span>
-    <span class="sector-tag">📡 Telecom</span>
-    <span class="sector-tag">🏭 Indústria</span>
-    <span class="sector-tag">🌾 Agronegócio</span>
-  </div>
-</div>
+    if data_fim <= data_inicio:
+        st.error("⚠️ A data fim deve ser após a data início.")
 
-<!-- ══ STAR SCHEMA ══ -->
-<section class="schema-section" id="schema">
-  <div class="section-header reveal">
-    <div class="section-eyebrow">Modelo de dados</div>
-    <h2>Star Schema pronto para produção</h2>
-    <p>Cada setor gera tabelas fato e dimensões relacionadas, prontas para serem carregadas diretamente no Power BI ou Tableau</p>
-  </div>
+    n_linhas = st.slider(
+        "**Linhas na tabela fato**",
+        min_value=1000, max_value=10000, value=5000, step=500
+    )
 
-  <div class="schema-diagram reveal">
-    <!-- SVG connector lines -->
-    <svg class="schema-svg" viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
-      <!-- top: DimCliente → Fato (center ~380,210) -->
-      <line class="conn-line" x1="380" y1="90"  x2="380" y2="178"/>
-      <!-- right: DimProduto -->
-      <line class="conn-line" x1="600" y1="210" x2="492" y2="210"/>
-      <!-- bottom: DimVendedor -->
-      <line class="conn-line" x1="380" y1="330" x2="380" y2="242"/>
-      <!-- left: DimFilial -->
-      <line class="conn-line" x1="160" y1="210" x2="268" y2="210"/>
-      <!-- tr: DimGeografia -->
-      <line class="conn-line" x1="580" y1="80"  x2="460" y2="185"/>
-      <!-- tl: dCalendario -->
-      <line class="conn-line" x1="180" y1="80"  x2="300" y2="185"/>
-    </svg>
+    st.markdown("---")
+    gerar = st.button("🚀 Gerar base", use_container_width=True, type="primary")
 
-    <!-- Fact center -->
-    <div class="schema-fact">
-      <div class="schema-fact-label">● Fato</div>
-      <div class="schema-fact-name">FatoVendas</div>
-      <div class="schema-fact-cols">
-        <div class="schema-fact-col fk">id_cliente →</div>
-        <div class="schema-fact-col fk">id_produto →</div>
-        <div class="schema-fact-col fk">id_vendedor →</div>
-        <div class="schema-fact-col fk">id_filial →</div>
-        <div class="schema-fact-col fk">id_data →</div>
-        <div class="schema-fact-col">valor_total</div>
-        <div class="schema-fact-col">quantidade</div>
-      </div>
-    </div>
+# ── header ───────────────────────────────────────────────────────────────────
+st.markdown('<div class="main-title">📊 BI Data Generator PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Bases de dados profissionais no modelo estrela para Power BI, Tableau e Data Analytics</div>', unsafe_allow_html=True)
 
-    <!-- Dims -->
-    <div class="schema-dim dim-top">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">DimCliente</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">id_cliente PK</div>
-        <div class="schema-dim-col">nome</div>
-        <div class="schema-dim-col">segmento</div>
-        <div class="schema-dim-col">cidade</div>
-      </div>
-    </div>
-    <div class="schema-dim dim-right">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">DimProduto</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">id_produto PK</div>
-        <div class="schema-dim-col">nome</div>
-        <div class="schema-dim-col">categoria</div>
-        <div class="schema-dim-col">preco</div>
-      </div>
-    </div>
-    <div class="schema-dim dim-bottom">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">DimVendedor</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">id_vendedor PK</div>
-        <div class="schema-dim-col">nome</div>
-        <div class="schema-dim-col">regiao</div>
-      </div>
-    </div>
-    <div class="schema-dim dim-left">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">DimFilial</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">id_filial PK</div>
-        <div class="schema-dim-col">nome</div>
-        <div class="schema-dim-col">uf</div>
-      </div>
-    </div>
-    <div class="schema-dim dim-tr">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">DimGeografia</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">id_geo PK</div>
-        <div class="schema-dim-col">estado</div>
-        <div class="schema-dim-col">regiao</div>
-      </div>
-    </div>
-    <div class="schema-dim dim-tl">
-      <div class="schema-dim-label">● Dim</div>
-      <div class="schema-dim-name">dCalendario</div>
-      <div class="schema-dim-cols">
-        <div class="schema-dim-col pk">Data PK</div>
-        <div class="schema-dim-col">Ano · Mês</div>
-        <div class="schema-dim-col">MesAno · IdMesAno</div>
-      </div>
-    </div>
-  </div>
-</section>
+# ── geração ──────────────────────────────────────────────────────────────────
+if gerar:
+    if data_fim <= data_inicio:
+        st.error("Corrija as datas antes de gerar.")
+        st.stop()
 
-<!-- ══ FEATURES ══ -->
-<section class="features-section">
-  <div class="section-header reveal">
-    <div class="section-eyebrow">Funcionalidades</div>
-    <h2>Tudo que seu projeto de BI precisa</h2>
-    <p>Dados coerentes, relacionamentos válidos e estrutura pronta para análise</p>
-  </div>
-  <div class="features-grid reveal">
-    <div class="feature-card">
-      <div class="feature-icon">⭐</div>
-      <div class="feature-title">Modelo Estrela nativo</div>
-      <div class="feature-text">Tabelas fato e dimensões com chaves primárias e estrangeiras consistentes. Relações íntegras, prontas para modelagem no Power BI.</div>
-      <span class="feature-mono">FatoVendas → Dims</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📅</div>
-      <div class="feature-title">dCalendario automático</div>
-      <div class="feature-text">Tabela de calendário gerada via Python com Data, Ano, Mês, MesAno e IdMesAno — equivalente exato ao script Power Query.</div>
-      <span class="feature-mono">IdMesAno = Ano×100+Mês</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🏭</div>
-      <div class="feature-title">10 setores especializados</div>
-      <div class="feature-text">Cada setor gera colunas e valores contextualmente corretos. Varejo tem SKU e categoria; Saúde tem CID e procedimentos.</div>
-      <span class="feature-mono">setor="Financeiro"</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📦</div>
-      <div class="feature-title">Download em .zip</div>
-      <div class="feature-text">Todas as tabelas exportadas em CSV separados, compactadas em um único arquivo pronto para importar no Power BI ou Python.</div>
-      <span class="feature-mono">Base_BI_{setor}.zip</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎛️</div>
-      <div class="feature-title">Controle total do volume</div>
-      <div class="feature-text">Defina o período temporal e a quantidade de linhas da tabela fato — de 1.000 a 10.000 registros com distribuição realista.</div>
-      <span class="feature-mono">linhas=5000</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🆓</div>
-      <div class="feature-title">100% gratuito e open</div>
-      <div class="feature-text">Sem cadastro, sem limite de uso, sem mensalidade. Roda no Streamlit Cloud — basta acessar e gerar quantas bases precisar.</div>
-      <span class="feature-mono">streamlit.app</span>
-    </div>
-  </div>
-</section>
+    with st.spinner("Gerando base de dados..."):
+        fn   = SETORES[setor]
+        nome = setor.split(" ", 1)[1]  # sem emoji
+        tabelas = fn(n_linhas, data_inicio, data_fim)
 
-<!-- ══ DCALENDARIO ══ -->
-<section class="calendar-section" id="calendario">
-  <div class="calendar-inner">
-    <div class="section-header reveal">
-      <div class="section-eyebrow">dCalendario</div>
-      <h2>Tabela de calendário Power Query–compatível</h2>
-      <p>Gerada em Python e 100% compatível com o padrão Power Query — mesmos tipos, mesma lógica, mesmo resultado</p>
-    </div>
-    <div class="cal-grid reveal">
-      <div class="cal-text">
-        <h3>Estrutura idêntica ao<br>script Power Query</h3>
-        <p>A tabela dCalendario é construída seguindo exatamente a mesma sequência de transformações do Power Query — ColunaData, ColunaAno, ColunaMes, ColunaMesAno e ColunaIdMesAno — garantindo compatibilidade total com modelos existentes.</p>
-        <div class="col-list">
-          <div class="col-item">
-            <span class="col-name">Data</span>
-            <span class="col-type">date</span>
-            <span class="col-desc">Dia a dia do período selecionado</span>
-          </div>
-          <div class="col-item">
-            <span class="col-name">Ano</span>
-            <span class="col-type">int64</span>
-            <span class="col-desc">Date.Year([Data])</span>
-          </div>
-          <div class="col-item">
-            <span class="col-name">Mês</span>
-            <span class="col-type">int64</span>
-            <span class="col-desc">Date.Month([Data])</span>
-          </div>
-          <div class="col-item">
-            <span class="col-name">MesAno</span>
-            <span class="col-type">text</span>
-            <span class="col-desc">Text.Proper(MMM/yy) → Jan/23</span>
-          </div>
-          <div class="col-item">
-            <span class="col-name">IdMesAno</span>
-            <span class="col-type">int64</span>
-            <span class="col-desc">Ano × 100 + Mês → 202301</span>
-          </div>
-        </div>
-      </div>
+    st.success(f"✅ Base **{nome}** gerada com sucesso!")
 
-      <!-- table preview -->
-      <div class="cal-table-wrap">
-        <div class="cal-table-header">
-          <span class="cal-table-title">📅 dCalendario</span>
-          <span class="cal-table-badge">365 linhas · 5 colunas</span>
-        </div>
-        <table>
-          <thead>
-            <tr><th>Data</th><th>Ano</th><th>Mês</th><th>MesAno</th><th>IdMesAno</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="td-date">2023-01-01</td><td class="td-num">2023</td><td class="td-num">1</td><td class="td-mes">Jan/23</td><td class="td-id">202301</td></tr>
-            <tr><td class="td-date">2023-01-02</td><td class="td-num">2023</td><td class="td-num">1</td><td class="td-mes">Jan/23</td><td class="td-id">202301</td></tr>
-            <tr><td class="td-date">2023-01-31</td><td class="td-num">2023</td><td class="td-num">1</td><td class="td-mes">Jan/23</td><td class="td-id">202301</td></tr>
-            <tr><td class="td-date">2023-02-01</td><td class="td-num">2023</td><td class="td-num">2</td><td class="td-mes">Fev/23</td><td class="td-id">202302</td></tr>
-            <tr><td class="td-date">2023-06-15</td><td class="td-num">2023</td><td class="td-num">6</td><td class="td-mes">Jun/23</td><td class="td-id">202306</td></tr>
-            <tr><td class="td-date">2023-12-31</td><td class="td-num">2023</td><td class="td-num">12</td><td class="td-mes">Dez/23</td><td class="td-id">202312</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</section>
+    # ── métricas ────────────────────────────────────────────────────────────
+    st.markdown("### 📈 Resumo da base gerada")
+    cols = st.columns(len(tabelas))
+    for i, (tname, tdf) in enumerate(tabelas.items()):
+        with cols[i % len(cols)]:
+            st.metric(label=tname, value=f"{len(tdf):,}", delta="linhas")
 
-<!-- ══ SECTORS ══ -->
-<section class="sectors-section" id="setores">
-  <div class="sectors-header reveal">
-    <div class="section-eyebrow" style="justify-content:flex-start">Setores</div>
-    <h2 style="font-family:var(--display);font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin-bottom:10px">Dados contextuais por setor</h2>
-    <p style="color:var(--text2);font-size:.9rem;max-width:520px;font-weight:300">Cada setor gera colunas, categorias e valores estatisticamente coerentes com o mercado real</p>
-  </div>
-  <div class="sectors-track-wrap">
-    <div class="sectors-track" id="sectorsTrack">
-      <div class="sector-card">
-        <span class="sector-card-icon">🛒</span>
-        <div class="sector-card-name">Varejo</div>
-        <div class="sector-card-hint">Vendas B2C, produtos e lojas físicas</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimProduto</span>
-          <span class="sector-table-tag">DimCliente</span>
-          <span class="sector-table-tag">DimFilial</span>
-          <span class="sector-table-tag">FatoVendas</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">💰</span>
-        <div class="sector-card-name">Financeiro</div>
-        <div class="sector-card-hint">Transações, contas e carteiras</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimConta</span>
-          <span class="sector-table-tag">DimAgencia</span>
-          <span class="sector-table-tag">FatoTransacao</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">🏥</span>
-        <div class="sector-card-name">Saúde</div>
-        <div class="sector-card-hint">Pacientes, procedimentos e atendimentos</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimPaciente</span>
-          <span class="sector-table-tag">DimMedico</span>
-          <span class="sector-table-tag">FatoAtendimento</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">💻</span>
-        <div class="sector-card-name">Tecnologia</div>
-        <div class="sector-card-hint">SaaS, licenças e suporte técnico</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimCliente</span>
-          <span class="sector-table-tag">DimProduto</span>
-          <span class="sector-table-tag">FatoContrato</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">📚</span>
-        <div class="sector-card-name">Educação</div>
-        <div class="sector-card-hint">Alunos, cursos e matrículas</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimAluno</span>
-          <span class="sector-table-tag">DimCurso</span>
-          <span class="sector-table-tag">FatoMatricula</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">🚚</span>
-        <div class="sector-card-name">Logística</div>
-        <div class="sector-card-hint">Entregas, rotas e transportadoras</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimTransportadora</span>
-          <span class="sector-table-tag">DimRota</span>
-          <span class="sector-table-tag">FatoEntrega</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">⚡</span>
-        <div class="sector-card-name">Energia</div>
-        <div class="sector-card-hint">Consumo, medidores e contratos</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimConsumidor</span>
-          <span class="sector-table-tag">DimMedidor</span>
-          <span class="sector-table-tag">FatoConsumo</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">📡</span>
-        <div class="sector-card-name">Telecom</div>
-        <div class="sector-card-hint">Planos, chamadas e assinantes</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimAssinante</span>
-          <span class="sector-table-tag">DimPlano</span>
-          <span class="sector-table-tag">FatoChamada</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">🏭</span>
-        <div class="sector-card-name">Indústria</div>
-        <div class="sector-card-hint">Produção, insumos e ordens de fabricação</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimMaquina</span>
-          <span class="sector-table-tag">DimInsumo</span>
-          <span class="sector-table-tag">FatoProducao</span>
-        </div>
-      </div>
-      <div class="sector-card">
-        <span class="sector-card-icon">🌾</span>
-        <div class="sector-card-name">Agronegócio</div>
-        <div class="sector-card-hint">Safras, culturas e propriedades rurais</div>
-        <div class="sector-card-tables">
-          <span class="sector-table-tag">DimPropriedade</span>
-          <span class="sector-table-tag">DimCultura</span>
-          <span class="sector-table-tag">FatoSafra</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    # ── preview das tabelas ─────────────────────────────────────────────────
+    st.markdown("### 🔍 Preview das tabelas")
+    tabs = st.tabs(list(tabelas.keys()))
+    for tab, (tname, tdf) in zip(tabs, tabelas.items()):
+        with tab:
+            st.dataframe(tdf.head(20), use_container_width=True)
+            st.caption(f"{len(tdf):,} linhas · {len(tdf.columns)} colunas")
 
-<!-- ══ HOW IT WORKS ══ -->
-<section class="how-section" id="como">
-  <div class="section-header reveal">
-    <div class="section-eyebrow">Como usar</div>
-    <h2>Do zero à base pronta em 4 passos</h2>
-    <p>Sem configuração, sem código, sem espera</p>
-  </div>
-  <div class="steps-grid reveal">
-    <div class="step">
-      <div class="step-num">01</div>
-      <span class="step-icon">🏭</span>
-      <div class="step-title">Escolha o setor</div>
-      <div class="step-text">Selecione entre 10 setores pré-configurados com dados contextualmente corretos</div>
-    </div>
-    <div class="step">
-      <div class="step-num">02</div>
-      <span class="step-icon">📅</span>
-      <div class="step-title">Defina o período</div>
-      <div class="step-text">Configure data início e fim — a dCalendario é gerada automaticamente para o intervalo</div>
-    </div>
-    <div class="step">
-      <div class="step-num">03</div>
-      <span class="step-icon">🚀</span>
-      <div class="step-title">Clique em Gerar</div>
-      <div class="step-text">A base completa é gerada em segundos com relações íntegras entre todas as tabelas</div>
-    </div>
-    <div class="step">
-      <div class="step-num">04</div>
-      <span class="step-icon">📦</span>
-      <div class="step-title">Baixe o .zip</div>
-      <div class="step-text">CSVs prontos para importar direto no Power BI, Tableau, Python ou qualquer ferramenta</div>
-    </div>
-  </div>
-</section>
+    # ── download ─────────────────────────────────────────────────────────────
+    st.markdown("### 📦 Download")
+    zip_bytes = to_zip(tabelas)
+    nome_arquivo = f"Base_BI_{nome.replace(' ','_')}.zip"
 
-<!-- ══ CTA ══ -->
-<section class="cta-section">
-  <div class="cta-glow"></div>
-  <div class="cta-box reveal">
-    <div class="cta-tag">Acesso gratuito</div>
-    <h2>Comece a gerar<br>sua base agora</h2>
-    <p>Sem cadastro. Sem limite. Só acessar e gerar quantas bases precisar.</p>
-    <div style="margin-bottom:8px">
-      <a href="https://bi-data-generator.streamlit.app" class="btn-primary" target="_blank" style="display:inline-flex;font-size:.9rem;padding:14px 32px">
-        Abrir o BI Data Generator
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-      </a>
-    </div>
-    <p class="cta-fine">// gratuito · sem cadastro · open source</p>
-  </div>
-</section>
+    st.download_button(
+        label=f"⬇️ Baixar {nome_arquivo}",
+        data=zip_bytes,
+        file_name=nome_arquivo,
+        mime="application/zip",
+        use_container_width=True,
+        type="primary",
+    )
 
-<!-- ══ FOOTER ══ -->
-<footer>
-  <span class="footer-logo">📊 BI Data Generator PRO</span>
-  <div class="footer-links">
-    <a href="#schema" class="footer-link">Star Schema</a>
-    <a href="#calendario" class="footer-link">dCalendario</a>
-    <a href="#setores" class="footer-link">Setores</a>
-    <a href="#como" class="footer-link">Como usar</a>
-  </div>
-  <span class="footer-mono">// built with Streamlit + Python</span>
-</footer>
+    st.info(
+        "📌 **Dica Power BI:** Importe os CSVs e crie relações usando as colunas "
+        "`id_*` (FK) da tabela Fato para as respectivas dimensões. "
+        "Conecte `dCalendario[Data]` ao campo de data da tabela Fato."
+    )
 
-<!-- ══ SCHEMA.ORG SEO ══ -->
-<script>
-const schema = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "BI Data Generator PRO",
-  "description": "Gerador de bases de dados profissionais no modelo estrela para projetos de Business Intelligence",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Web",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
-  "featureList": [
-    "Modelo Star Schema",
-    "10 setores de negócio",
-    "dCalendario automático",
-    "Exportação em CSV/ZIP",
-    "Compatível com Power BI e Tableau"
-  ]
-};
-const s = document.createElement('script');
-s.type = 'application/ld+json';
-s.textContent = JSON.stringify(schema);
-document.head.appendChild(s);
+else:
+    # ── estado inicial ───────────────────────────────────────────────────────
+    st.markdown("### 🗂️ Como usar")
+    st.markdown("""
+1. **Escolha o setor** no painel à esquerda
+2. **Defina o período** de início e fim
+3. **Ajuste o volume** de linhas (1.000 a 10.000)
+4. Clique em **Gerar base**
+5. Faça o **download do .zip** com todos os CSVs
+    """)
 
-// Reveal on scroll
-const io = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-}, { threshold: .1 });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    st.markdown("### ⭐ Estrutura gerada (Star Schema)")
+    st.markdown("""
+Cada base inclui:
+- **Tabela Fato** com chaves estrangeiras (`id_*`) e métricas
+- **Tabelas Dimensão** com chaves primárias e atributos descritivos
+- **dCalendario** com Data, Ano, Mês, MesAno e IdMesAno — compatível com Power Query
+- Tudo zipado em CSVs prontos para importar
+    """)
 
-// Sectors auto-scroll
-const track = document.getElementById('sectorsTrack');
-let isPaused = false;
-track.addEventListener('mouseenter', () => isPaused = true);
-track.addEventListener('mouseleave', () => isPaused = false);
-let pos = 0;
-setInterval(() => {
-  if (!isPaused) {
-    pos += .6;
-    if (pos >= track.scrollWidth - track.clientWidth) pos = 0;
-    track.scrollLeft = pos;
-  }
-}, 16);
-</script>
-</body>
-</html>
+    st.markdown("### 🏭 Setores disponíveis")
+    cols = st.columns(5)
+    for i, s in enumerate(SETORES.keys()):
+        with cols[i % 5]:
+            st.markdown(f"**{s}**")
