@@ -1013,6 +1013,16 @@ hr {
 /* ── DATAFRAME ── */
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
+/* ── BOTÃO COLAPSAR SIDEBAR — esconde texto, mantém botão ── */
+[data-testid="stSidebarCollapsedControl"] span,
+[data-testid="stSidebarCollapsedControl"] p,
+button[data-testid="stBaseButton-headerNoPadding"] span,
+button[data-testid="stBaseButton-headerNoPadding"] p {
+    display: none !important;
+    font-size: 0 !important;
+    visibility: hidden !important;
+}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0e27; }
