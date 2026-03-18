@@ -1014,11 +1014,13 @@ hr {
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
 /* ── BOTÃO COLAPSAR SIDEBAR ── */
-button[data-testid="stBaseButton-headerNoPadding"] span[data-testid="stIconMaterial"],
-[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"] {
-    color: #a78bfa !important;
+span[data-testid="stIconMaterial"] {
+    text-indent: -9999px !important;
+    overflow: hidden !important;
     font-size: 1.4rem !important;
-    visibility: visible !important;
+    display: block !important;
+    width: 1.4rem !important;
+    height: 1.4rem !important;
 }
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
