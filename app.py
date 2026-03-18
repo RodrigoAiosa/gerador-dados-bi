@@ -1014,57 +1014,20 @@ hr {
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
 /* ── BOTÃO COLAPSAR SIDEBAR ── */
-
-/* Esconde o texto "keyboard_double_arrow_left" do header (sidebar aberta) */
-[data-testid="stHeader"] [data-testid="stIconMaterial"],
-[data-testid="stToolbar"] [data-testid="stIconMaterial"],
-[data-testid="stAppToolbar"] [data-testid="stIconMaterial"],
-button[data-testid="stBaseButton-headerNoPadding"] [data-testid="stIconMaterial"] {
-    font-size: 0 !important;
-    visibility: hidden !important;
-    width: 0 !important;
+button[data-testid="stBaseButton-headerNoPadding"] span[data-testid="stIconMaterial"],
+[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"] {
+    color: #a78bfa !important;
+    font-size: 1.4rem !important;
+    visibility: visible !important;
 }
-
-/* Injeta ícone via ::after no botão do header */
-button[data-testid="stBaseButton-headerNoPadding"]::after {
-    content: '⟪';
-    font-size: 1.15rem;
-    font-weight: 900;
-    color: #a78bfa;
-    line-height: 1;
-    display: inline-block;
-}
-
-/* Sidebar FECHADA — botão flutuante com ícone invertido */
-[data-testid="stSidebarCollapsedControl"] [data-testid="stIconMaterial"] {
-    font-size: 0 !important;
-    visibility: hidden !important;
-    width: 0 !important;
-}
-[data-testid="stSidebarCollapsedControl"] button::after {
-    content: '⟫';
-    font-size: 1.15rem;
-    font-weight: 900;
-    color: #a78bfa;
-    line-height: 1;
-    display: inline-block;
-}
-
-/* Estilo dos botões nos dois estados */
-[data-testid="stSidebarCollapsedControl"] button,
-button[data-testid="stBaseButton-headerNoPadding"] {
-    min-width: 32px !important;
-    min-height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+button[data-testid="stBaseButton-headerNoPadding"],
+[data-testid="stSidebarCollapsedControl"] button {
     background: rgba(167,139,250,0.08) !important;
     border: 1px solid rgba(167,139,250,0.2) !important;
     border-radius: 8px !important;
-    transition: background 0.2s, border-color 0.2s !important;
 }
-[data-testid="stSidebarCollapsedControl"] button:hover,
-button[data-testid="stBaseButton-headerNoPadding"]:hover {
+button[data-testid="stBaseButton-headerNoPadding"]:hover,
+[data-testid="stSidebarCollapsedControl"] button:hover {
     background: rgba(167,139,250,0.18) !important;
     border-color: rgba(167,139,250,0.4) !important;
 }
