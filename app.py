@@ -1014,14 +1014,34 @@ hr {
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
 /* ── BOTÃO COLAPSAR SIDEBAR ── */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
+
+/* Esconde o texto ligature */
 span[data-testid="stIconMaterial"] {
-    text-indent: -9999px !important;
-    overflow: hidden !important;
-    font-size: 1.4rem !important;
-    display: block !important;
-    width: 1.4rem !important;
-    height: 1.4rem !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    display: inline-block !important;
+    width: 24px !important;
+    height: 24px !important;
+    position: relative !important;
 }
+
+/* Ícone quando sidebar está ABERTA: << */
+span[data-testid="stIconMaterial"]::before {
+    font-family: 'Material Symbols Rounded' !important;
+    font-size: 24px !important;
+    line-height: 24px !important;
+    color: #a78bfa !important;
+    position: absolute !important;
+    top: 0; left: 0 !important;
+    content: "\\eac3" !important; /* keyboard_double_arrow_left */
+}
+
+/* Ícone quando sidebar está FECHADA (dentro de stSidebarCollapsedControl): >> */
+[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before {
+    content: "\\eac9" !important; /* keyboard_double_arrow_right */
+}
+
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
     background: rgba(167,139,250,0.08) !important;
