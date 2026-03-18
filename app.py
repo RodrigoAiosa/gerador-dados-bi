@@ -60,10 +60,10 @@ def to_zip(tables: dict[str, pd.DataFrame]) -> bytes:
 
 # ── VAREJO ──────────────────────────────────────────────────────────────────
 def gerar_varejo(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
-    n_clientes  = min(n, 5000)
-    n_produtos  = min(500, n // 5 + 50)
+    n_clientes   = min(n, 5000)
+    n_produtos   = min(500, n // 5 + 50)
     n_vendedores = 50
-    n_filiais   = 10
+    n_filiais    = 10
 
     estados = ["SP","RJ","MG","RS","PR","SC","BA","CE","PE","GO"]
     regioes = {"SP":"Sudeste","RJ":"Sudeste","MG":"Sudeste","RS":"Sul","PR":"Sul",
@@ -117,32 +117,32 @@ def gerar_varejo(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     precos   = [dim_produto.loc[dim_produto["id_produto"]==p, "preco_unit"].values[0] for p in produtos]
 
     fato = pd.DataFrame({
-        "id_venda":   new_ids(n),
-        "id_data":    datas,
-        "id_cliente": random.choices(dim_cliente["id_cliente"].tolist(), k=n),
-        "id_produto": produtos,
-        "id_vendedor":random.choices(dim_vendedor["id_vendedor"].tolist(), k=n),
-        "id_filial":  random.choices(dim_filial["id_filial"].tolist(), k=n),
-        "quantidade": qtds,
-        "valor_unit": [round(p, 2) for p in precos],
-        "desconto":   rng.uniform(0, 0.3, n).round(3),
-        "valor_total":[round(q * p * (1 - d), 2) for q, p, d in zip(qtds, precos, rng.uniform(0, 0.3, n))],
-        "canal":      random.choices(["Loja","Online","Telefone"], k=n),
+        "id_venda":    new_ids(n),
+        "id_data":     datas,
+        "id_cliente":  random.choices(dim_cliente["id_cliente"].tolist(), k=n),
+        "id_produto":  produtos,
+        "id_vendedor": random.choices(dim_vendedor["id_vendedor"].tolist(), k=n),
+        "id_filial":   random.choices(dim_filial["id_filial"].tolist(), k=n),
+        "quantidade":  qtds,
+        "valor_unit":  [round(p, 2) for p in precos],
+        "desconto":    rng.uniform(0, 0.3, n).round(3),
+        "valor_total": [round(q * p * (1 - d), 2) for q, p, d in zip(qtds, precos, rng.uniform(0, 0.3, n))],
+        "canal":       random.choices(["Loja","Online","Telefone"], k=n),
     })
 
     return {
-        "DimCliente":  dim_cliente,
-        "DimProduto":  dim_produto,
-        "DimVendedor": dim_vendedor,
-        "DimFilial":   dim_filial,
-        "DimGeografia":dim_geo,
-        "FatoVendas":  fato,
-        "dCalendario": dcalendario(start, end),
+        "DimCliente":   dim_cliente,
+        "DimProduto":   dim_produto,
+        "DimVendedor":  dim_vendedor,
+        "DimFilial":    dim_filial,
+        "DimGeografia": dim_geo,
+        "FatoVendas":   fato,
+        "dCalendario":  dcalendario(start, end),
     }
 
 # ── FINANCEIRO ──────────────────────────────────────────────────────────────
 def gerar_financeiro(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
-    n_contas  = min(n, 3000)
+    n_contas   = min(n, 3000)
     n_agencias = 30
     n_produtos = 20
 
@@ -164,14 +164,14 @@ def gerar_financeiro(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     })
 
     dim_produto = pd.DataFrame({
-        "id_produto":  new_ids(n_produtos),
-        "nome":        ["CDB","LCI","LCA","Tesouro Direto","Fundo DI","Fundo Multimercado",
-                        "Cartão Crédito","Cartão Débito","Seguro Vida","Previdência",
-                        "Financiamento","Empréstimo Pessoal","Consórcio","Câmbio",
-                        "Conta Corrente","Conta Poupança","PIX","TED","DOC","Cheque"],
-        "categoria":   ["Investimento"]*6 + ["Cartão"]*2 + ["Seguro","Previdência"] +
-                       ["Crédito"]*3 + ["Câmbio"] + ["Conta"]*2 + ["Pagamento"]*4,
-        "taxa_juros":  rng.uniform(0.005, 0.15, n_produtos).round(4),
+        "id_produto": new_ids(n_produtos),
+        "nome":       ["CDB","LCI","LCA","Tesouro Direto","Fundo DI","Fundo Multimercado",
+                       "Cartão Crédito","Cartão Débito","Seguro Vida","Previdência",
+                       "Financiamento","Empréstimo Pessoal","Consórcio","Câmbio",
+                       "Conta Corrente","Conta Poupança","PIX","TED","DOC","Cheque"],
+        "categoria":  ["Investimento"]*6 + ["Cartão"]*2 + ["Seguro","Previdência"] +
+                      ["Crédito"]*3 + ["Câmbio"] + ["Conta"]*2 + ["Pagamento"]*4,
+        "taxa_juros": rng.uniform(0.005, 0.15, n_produtos).round(4),
     })
 
     tipos_transacao = ["Débito","Crédito","TED","DOC","PIX","Saque","Depósito","Investimento"]
@@ -197,10 +197,10 @@ def gerar_financeiro(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
 
 # ── SAÚDE ────────────────────────────────────────────────────────────────────
 def gerar_saude(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
-    n_pacientes  = min(n, 3000)
-    n_medicos    = 80
-    n_proc       = 40
-    n_unidades   = 15
+    n_pacientes = min(n, 3000)
+    n_medicos   = 80
+    n_proc      = 40
+    n_unidades  = 15
 
     dim_unidade = pd.DataFrame({
         "id_unidade": new_ids(n_unidades),
@@ -213,11 +213,11 @@ def gerar_saude(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     especialidades = ["Clínica Geral","Cardiologia","Ortopedia","Pediatria","Ginecologia",
                       "Neurologia","Oncologia","Dermatologia","Psiquiatria","Oftalmologia"]
     dim_medico = pd.DataFrame({
-        "id_medico":      new_ids(n_medicos),
-        "nome":           [f"Dr(a). {fake.name()}" for _ in range(n_medicos)],
-        "crm":            [f"CRM/{random.choice(['SP','RJ','MG'])}-{rng.integers(10000,99999)}" for _ in range(n_medicos)],
-        "especialidade":  random.choices(especialidades, k=n_medicos),
-        "id_unidade":     random.choices(dim_unidade["id_unidade"].tolist(), k=n_medicos),
+        "id_medico":     new_ids(n_medicos),
+        "nome":          [f"Dr(a). {fake.name()}" for _ in range(n_medicos)],
+        "crm":           [f"CRM/{random.choice(['SP','RJ','MG'])}-{rng.integers(10000,99999)}" for _ in range(n_medicos)],
+        "especialidade": random.choices(especialidades, k=n_medicos),
+        "id_unidade":    random.choices(dim_unidade["id_unidade"].tolist(), k=n_medicos),
     })
 
     cids = [f"J{rng.integers(10,99)}.{rng.integers(0,9)}" for _ in range(n_proc)]
@@ -305,17 +305,17 @@ def gerar_tecnologia(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     })
 
     return {
-        "DimProduto":  dim_produto,
-        "DimCliente":  dim_cliente,
-        "DimAgente":   dim_agente,
-        "FatoContrato":fato,
-        "dCalendario": dcalendario(start, end),
+        "DimProduto":   dim_produto,
+        "DimCliente":   dim_cliente,
+        "DimAgente":    dim_agente,
+        "FatoContrato": fato,
+        "dCalendario":  dcalendario(start, end),
     }
 
 # ── EDUCAÇÃO ─────────────────────────────────────────────────────────────────
 def gerar_educacao(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
-    n_alunos  = min(n, 5000)
-    n_cursos  = 60
+    n_alunos      = min(n, 5000)
+    n_cursos      = 60
     n_instrutores = 40
 
     dim_curso = pd.DataFrame({
@@ -328,13 +328,13 @@ def gerar_educacao(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     })
 
     dim_aluno = pd.DataFrame({
-        "id_aluno": new_ids(n_alunos),
-        "nome":     [fake.name() for _ in range(n_alunos)],
-        "cpf":      [fake.cpf()  for _ in range(n_alunos)],
-        "email":    [fake.email() for _ in range(n_alunos)],
-        "sexo":     random.choices(["M","F","Outro"], weights=[47,50,3], k=n_alunos),
-        "uf":       random.choices(["SP","RJ","MG","RS","PR","BA","CE"], k=n_alunos),
-        "faixa_etaria": random.choices(["15-17","18-24","25-34","35-44","45+"], k=n_alunos),
+        "id_aluno":      new_ids(n_alunos),
+        "nome":          [fake.name() for _ in range(n_alunos)],
+        "cpf":           [fake.cpf()  for _ in range(n_alunos)],
+        "email":         [fake.email() for _ in range(n_alunos)],
+        "sexo":          random.choices(["M","F","Outro"], weights=[47,50,3], k=n_alunos),
+        "uf":            random.choices(["SP","RJ","MG","RS","PR","BA","CE"], k=n_alunos),
+        "faixa_etaria":  random.choices(["15-17","18-24","25-34","35-44","45+"], k=n_alunos),
     })
 
     dim_instrutor = pd.DataFrame({
@@ -345,24 +345,24 @@ def gerar_educacao(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     })
 
     fato = pd.DataFrame({
-        "id_matricula":  new_ids(n),
-        "id_data":       rand_dates(start, end, n),
-        "id_aluno":      random.choices(dim_aluno["id_aluno"].tolist(), k=n),
-        "id_curso":      random.choices(dim_curso["id_curso"].tolist(), k=n),
-        "id_instrutor":  random.choices(dim_instrutor["id_instrutor"].tolist(), k=n),
+        "id_matricula":    new_ids(n),
+        "id_data":         rand_dates(start, end, n),
+        "id_aluno":        random.choices(dim_aluno["id_aluno"].tolist(), k=n),
+        "id_curso":        random.choices(dim_curso["id_curso"].tolist(), k=n),
+        "id_instrutor":    random.choices(dim_instrutor["id_instrutor"].tolist(), k=n),
         "forma_pagamento": random.choices(["Boleto","Cartão","PIX","Financiamento"], k=n),
-        "valor_pago":    rng.uniform(200, 5000, n).round(2),
-        "nota_final":    rng.uniform(0, 10, n).round(1),
-        "concluiu":      random.choices([1, 0], weights=[65, 35], k=n),
-        "status":        random.choices(["Ativo","Concluído","Trancado","Cancelado"], weights=[40,35,15,10], k=n),
+        "valor_pago":      rng.uniform(200, 5000, n).round(2),
+        "nota_final":      rng.uniform(0, 10, n).round(1),
+        "concluiu":        random.choices([1, 0], weights=[65, 35], k=n),
+        "status":          random.choices(["Ativo","Concluído","Trancado","Cancelado"], weights=[40,35,15,10], k=n),
     })
 
     return {
-        "DimCurso":     dim_curso,
-        "DimAluno":     dim_aluno,
-        "DimInstrutor": dim_instrutor,
-        "FatoMatricula":fato,
-        "dCalendario":  dcalendario(start, end),
+        "DimCurso":      dim_curso,
+        "DimAluno":      dim_aluno,
+        "DimInstrutor":  dim_instrutor,
+        "FatoMatricula": fato,
+        "dCalendario":   dcalendario(start, end),
     }
 
 # ── LOGÍSTICA ────────────────────────────────────────────────────────────────
@@ -381,9 +381,9 @@ def gerar_logistica(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     })
 
     dim_rota = pd.DataFrame({
-        "id_rota":    new_ids(n_rotas),
-        "origem_uf":  random.choices(ufs, k=n_rotas),
-        "destino_uf": random.choices(ufs, k=n_rotas),
+        "id_rota":      new_ids(n_rotas),
+        "origem_uf":    random.choices(ufs, k=n_rotas),
+        "destino_uf":   random.choices(ufs, k=n_rotas),
         "distancia_km": rng.integers(50, 4000, n_rotas),
         "prazo_dias":   rng.integers(1, 15, n_rotas),
     })
@@ -480,20 +480,20 @@ def gerar_telecom(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
     n_torres     = 50
 
     dim_plano = pd.DataFrame({
-        "id_plano":    new_ids(n_planos),
-        "nome":        [f"Plano {p} {d}" for p, d in
-                        zip(random.choices(["Básico","Plus","Max","Ultra","Ilimitado"], k=n_planos),
-                            random.choices(["Móvel","Fixo","Combo","Empresarial"], k=n_planos))],
-        "tipo":        random.choices(["Pré-pago","Pós-pago","Controle","Empresarial"], k=n_planos),
-        "dados_gb":    random.choices([5, 10, 15, 20, 30, 50, 100, 0], k=n_planos),
-        "valor_mensal":rng.uniform(29.9, 299.9, n_planos).round(2),
+        "id_plano":     new_ids(n_planos),
+        "nome":         [f"Plano {p} {d}" for p, d in
+                         zip(random.choices(["Básico","Plus","Max","Ultra","Ilimitado"], k=n_planos),
+                             random.choices(["Móvel","Fixo","Combo","Empresarial"], k=n_planos))],
+        "tipo":         random.choices(["Pré-pago","Pós-pago","Controle","Empresarial"], k=n_planos),
+        "dados_gb":     random.choices([5, 10, 15, 20, 30, 50, 100, 0], k=n_planos),
+        "valor_mensal": rng.uniform(29.9, 299.9, n_planos).round(2),
     })
 
     dim_torre = pd.DataFrame({
-        "id_torre": new_ids(n_torres),
-        "codigo":   [f"ERB-{rng.integers(1000,9999)}" for _ in range(n_torres)],
-        "tecnologia":random.choices(["2G","3G","4G","5G"], weights=[5,10,60,25], k=n_torres),
-        "uf":       random.choices(["SP","RJ","MG","RS","PR","BA"], k=n_torres),
+        "id_torre":          new_ids(n_torres),
+        "codigo":            [f"ERB-{rng.integers(1000,9999)}" for _ in range(n_torres)],
+        "tecnologia":        random.choices(["2G","3G","4G","5G"], weights=[5,10,60,25], k=n_torres),
+        "uf":                random.choices(["SP","RJ","MG","RS","PR","BA"], k=n_torres),
         "capacidade_canais": rng.integers(50, 500, n_torres),
     })
 
@@ -529,18 +529,18 @@ def gerar_telecom(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
 
 # ── INDÚSTRIA ────────────────────────────────────────────────────────────────
 def gerar_industria(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
-    n_maquinas = 30
-    n_insumos  = 60
-    n_produtos = 40
+    n_maquinas   = 30
+    n_insumos    = 60
+    n_produtos   = 40
     n_operadores = 50
 
     dim_maquina = pd.DataFrame({
-        "id_maquina": new_ids(n_maquinas),
-        "nome":       [f"Máquina {fake.word().upper()}-{i}" for i in range(1, n_maquinas+1)],
-        "tipo":       random.choices(["Torno","Fresadora","Prensa","Injetora","CNC","Soldadora","Estampadora"], k=n_maquinas),
-        "linha":      random.choices(["Linha A","Linha B","Linha C","Linha D"], k=n_maquinas),
-        "capacidade_h":rng.integers(100, 2000, n_maquinas),
-        "ano_fab":    rng.integers(2000, 2023, n_maquinas),
+        "id_maquina":   new_ids(n_maquinas),
+        "nome":         [f"Máquina {fake.word().upper()}-{i}" for i in range(1, n_maquinas+1)],
+        "tipo":         random.choices(["Torno","Fresadora","Prensa","Injetora","CNC","Soldadora","Estampadora"], k=n_maquinas),
+        "linha":        random.choices(["Linha A","Linha B","Linha C","Linha D"], k=n_maquinas),
+        "capacidade_h": rng.integers(100, 2000, n_maquinas),
+        "ano_fab":      rng.integers(2000, 2023, n_maquinas),
     })
 
     dim_insumo = pd.DataFrame({
@@ -568,27 +568,27 @@ def gerar_industria(n: int, start: date, end: date) -> dict[str, pd.DataFrame]:
 
     qtd = rng.integers(1, 500, n)
     fato = pd.DataFrame({
-        "id_ordem":    new_ids(n),
-        "id_data":     rand_dates(start, end, n),
-        "id_maquina":  random.choices(dim_maquina["id_maquina"].tolist(), k=n),
-        "id_insumo":   random.choices(dim_insumo["id_insumo"].tolist(), k=n),
-        "id_produto":  random.choices(dim_produto["id_produto"].tolist(), k=n),
-        "id_operador": random.choices(dim_operador["id_operador"].tolist(), k=n),
-        "quantidade":  qtd,
-        "tempo_ciclo_min": rng.uniform(1, 480, n).round(1),
-        "refugo_pct":  rng.uniform(0, 0.15, n).round(4),
-        "custo_producao": rng.uniform(100, 50000, n).round(2),
-        "oee":         rng.uniform(0.5, 0.98, n).round(3),
-        "turno":       random.choices(["Manhã","Tarde","Noite"], k=n),
+        "id_ordem":         new_ids(n),
+        "id_data":          rand_dates(start, end, n),
+        "id_maquina":       random.choices(dim_maquina["id_maquina"].tolist(), k=n),
+        "id_insumo":        random.choices(dim_insumo["id_insumo"].tolist(), k=n),
+        "id_produto":       random.choices(dim_produto["id_produto"].tolist(), k=n),
+        "id_operador":      random.choices(dim_operador["id_operador"].tolist(), k=n),
+        "quantidade":       qtd,
+        "tempo_ciclo_min":  rng.uniform(1, 480, n).round(1),
+        "refugo_pct":       rng.uniform(0, 0.15, n).round(4),
+        "custo_producao":   rng.uniform(100, 50000, n).round(2),
+        "oee":              rng.uniform(0.5, 0.98, n).round(3),
+        "turno":            random.choices(["Manhã","Tarde","Noite"], k=n),
     })
 
     return {
-        "DimMaquina":  dim_maquina,
-        "DimInsumo":   dim_insumo,
-        "DimProduto":  dim_produto,
-        "DimOperador": dim_operador,
-        "FatoProducao":fato,
-        "dCalendario": dcalendario(start, end),
+        "DimMaquina":   dim_maquina,
+        "DimInsumo":    dim_insumo,
+        "DimProduto":   dim_produto,
+        "DimOperador":  dim_operador,
+        "FatoProducao": fato,
+        "dCalendario":  dcalendario(start, end),
     }
 
 # ── AGRONEGÓCIO ──────────────────────────────────────────────────────────────
@@ -596,17 +596,16 @@ def gerar_agronegocio(n: int, start: date, end: date) -> dict[str, pd.DataFrame]
     n_propriedades = min(n // 5 + 50, 500)
     n_culturas     = 20
     n_insumos      = 40
-    n_clientes     = min(n, 1000)
 
     culturas_nomes = ["Soja","Milho","Cana-de-açúcar","Algodão","Café","Trigo",
                       "Arroz","Feijão","Laranja","Eucalipto","Sorgo","Girassol",
                       "Amendoim","Mandioca","Cacau","Mamona","Canola","Aveia","Cevada","Fumo"]
     dim_cultura = pd.DataFrame({
-        "id_cultura":   new_ids(n_culturas),
-        "nome":         culturas_nomes,
-        "tipo":         random.choices(["Grão","Fibra","Fruta","Hortaliça","Energia"], k=n_culturas),
-        "ciclo_dias":   rng.integers(60, 365, n_culturas),
-        "preco_ton":    rng.uniform(500, 8000, n_culturas).round(2),
+        "id_cultura": new_ids(n_culturas),
+        "nome":       culturas_nomes,
+        "tipo":       random.choices(["Grão","Fibra","Fruta","Hortaliça","Energia"], k=n_culturas),
+        "ciclo_dias": rng.integers(60, 365, n_culturas),
+        "preco_ton":  rng.uniform(500, 8000, n_culturas).round(2),
     })
 
     ufs_agro = ["MT","MS","GO","SP","PR","RS","SC","MG","BA","PI"]
@@ -631,20 +630,20 @@ def gerar_agronegocio(n: int, start: date, end: date) -> dict[str, pd.DataFrame]
     area_plantada = rng.uniform(5, 5000, n).round(1)
     prod_por_ha   = rng.uniform(1, 10, n).round(2)
     fato = pd.DataFrame({
-        "id_safra":        new_ids(n),
-        "id_data":         rand_dates(start, end, n),
-        "id_propriedade":  random.choices(dim_propriedade["id_propriedade"].tolist(), k=n),
-        "id_cultura":      random.choices(dim_cultura["id_cultura"].tolist(), k=n),
-        "id_insumo":       random.choices(dim_insumo["id_insumo"].tolist(), k=n),
-        "area_plantada_ha":area_plantada,
-        "produtividade_tha":prod_por_ha,
-        "producao_ton":    (area_plantada * prod_por_ha).round(2),
-        "custo_ha":        rng.uniform(500, 8000, n).round(2),
-        "receita":         rng.uniform(1000, 500000, n).round(2),
-        "indice_chuva_mm": rng.uniform(0, 300, n).round(1),
-        "temperatura_media":rng.uniform(15, 35, n).round(1),
-        "status":          random.choices(["Colhida","Em andamento","Planejada","Perdida"],
-                                          weights=[50,30,15,5], k=n),
+        "id_safra":          new_ids(n),
+        "id_data":           rand_dates(start, end, n),
+        "id_propriedade":    random.choices(dim_propriedade["id_propriedade"].tolist(), k=n),
+        "id_cultura":        random.choices(dim_cultura["id_cultura"].tolist(), k=n),
+        "id_insumo":         random.choices(dim_insumo["id_insumo"].tolist(), k=n),
+        "area_plantada_ha":  area_plantada,
+        "produtividade_tha": prod_por_ha,
+        "producao_ton":      (area_plantada * prod_por_ha).round(2),
+        "custo_ha":          rng.uniform(500, 8000, n).round(2),
+        "receita":           rng.uniform(1000, 500000, n).round(2),
+        "indice_chuva_mm":   rng.uniform(0, 300, n).round(1),
+        "temperatura_media": rng.uniform(15, 35, n).round(1),
+        "status":            random.choices(["Colhida","Em andamento","Planejada","Perdida"],
+                                            weights=[50,30,15,5], k=n),
     })
 
     return {
@@ -659,22 +658,24 @@ def gerar_agronegocio(n: int, start: date, end: date) -> dict[str, pd.DataFrame]
 #  MAPA DE SETORES
 # ═══════════════════════════════════════════════════════════════════════════
 SETORES = {
-    "🛒 Varejo":          gerar_varejo,
-    "💰 Financeiro":      gerar_financeiro,
-    "🏥 Saúde":           gerar_saude,
-    "💻 Tecnologia":      gerar_tecnologia,
-    "📚 Educação":        gerar_educacao,
-    "🚚 Logística":       gerar_logistica,
-    "⚡ Energia":          gerar_energia,
-    "📡 Telecom":         gerar_telecom,
-    "🏭 Indústria":       gerar_industria,
-    "🌾 Agronegócio":     gerar_agronegocio,
+    "🛒 Varejo":       gerar_varejo,
+    "💰 Financeiro":   gerar_financeiro,
+    "🏥 Saúde":        gerar_saude,
+    "💻 Tecnologia":   gerar_tecnologia,
+    "📚 Educação":     gerar_educacao,
+    "🚚 Logística":    gerar_logistica,
+    "⚡ Energia":       gerar_energia,
+    "📡 Telecom":      gerar_telecom,
+    "🏭 Indústria":    gerar_industria,
+    "🌾 Agronegócio":  gerar_agronegocio,
 }
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  INTERFACE STREAMLIT
+#  CSS GLOBAL
 # ═══════════════════════════════════════════════════════════════════════════
-st.markdown("""
+def inject_css() -> None:
+    """Injeta todo o CSS customizado da aplicação."""
+    st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -1027,7 +1028,6 @@ hr {
 /* ── BOTÃO COLAPSAR SIDEBAR ── */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
 
-/* Esconde o texto ligature */
 span[data-testid="stIconMaterial"] {
     font-size: 0 !important;
     line-height: 0 !important;
@@ -1036,8 +1036,6 @@ span[data-testid="stIconMaterial"] {
     height: 24px !important;
     position: relative !important;
 }
-
-/* Ícone quando sidebar está ABERTA: << */
 span[data-testid="stIconMaterial"]::before {
     font-family: 'Material Symbols Rounded' !important;
     font-size: 24px !important;
@@ -1045,14 +1043,11 @@ span[data-testid="stIconMaterial"]::before {
     color: #a78bfa !important;
     position: absolute !important;
     top: 0; left: 0 !important;
-    content: "\\eac3" !important; /* keyboard_double_arrow_left */
+    content: "\\eac3" !important;
 }
-
-/* Ícone quando sidebar está FECHADA (dentro de stSidebarCollapsedControl): >> */
 [data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before {
-    content: "\\eac9" !important; /* keyboard_double_arrow_right */
+    content: "\\eac9" !important;
 }
-
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
     background: rgba(167,139,250,0.08) !important;
@@ -1120,43 +1115,111 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
 </style>
 """, unsafe_allow_html=True)
 
-# ── sidebar ─────────────────────────────────────────────────────────────────
-with st.sidebar:
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  SIDEBAR — função dedicada
+# ═══════════════════════════════════════════════════════════════════════════
+def render_sidebar() -> tuple[str, date, date, int, bool]:
+    """
+    Renderiza a sidebar completa da aplicação.
+
+    Retorna
+    -------
+    setor : str
+        Setor selecionado (chave de SETORES).
+    data_inicio : date
+        Data de início do período.
+    data_fim : date
+        Data de fim do período.
+    n_linhas : int
+        Número de linhas na tabela fato.
+    gerar : bool
+        True se o botão "Gerar base agora" foi clicado.
+    """
+    with st.sidebar:
+        # ── logo / título ──────────────────────────────────────────────────
+        st.markdown("""
+        <div style="padding: 8px 0 20px;">
+            <div style="font-family: Syne, sans-serif; font-size: 1.1rem; font-weight: 800;
+                        color: #f0f4ff; margin-bottom: 4px;">BI Data Generator</div>
+            <div style="font-family: Syne, sans-serif; font-size: 0.65rem; font-weight: 700;
+                        letter-spacing: 3px; text-transform: uppercase; color: #a78bfa;
+                        background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
+                        border-radius: 100px; padding: 3px 12px; display: inline-block;">PRO</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(
+            '<div style="height:1px; background: rgba(167,139,250,0.15); margin-bottom:20px;"></div>',
+            unsafe_allow_html=True,
+        )
+
+        # ── setor ──────────────────────────────────────────────────────────
+        st.markdown(
+            '<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700;'
+            ' letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 10px;">Setor</p>',
+            unsafe_allow_html=True,
+        )
+        setor = st.selectbox("", list(SETORES.keys()), label_visibility="collapsed")
+
+        # ── período ────────────────────────────────────────────────────────
+        st.markdown(
+            '<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700;'
+            ' letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">Período</p>',
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            data_inicio = st.date_input("Início", value=date(2023, 1, 1))
+        with col2:
+            data_fim = st.date_input("Fim", value=date(2023, 12, 31))
+
+        datas_invalidas = data_fim <= data_inicio
+        if datas_invalidas:
+            st.markdown(
+                '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);'
+                'border-radius:10px;padding:10px 14px;font-size:0.8rem;color:#fca5a5;margin-top:8px;">'
+                '&#9888; Data fim deve ser após a data início.</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── volume de dados ────────────────────────────────────────────────
+        st.markdown(
+            '<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700;'
+            ' letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">'
+            'Volume de dados</p>',
+            unsafe_allow_html=True,
+        )
+        n_linhas = st.slider(
+            "",
+            min_value=1_000,
+            max_value=10_000,
+            value=5_000,
+            step=500,
+            label_visibility="collapsed",
+        )
+        st.markdown(
+            f'<p style="font-size:0.75rem;color:#7b8ba8;text-align:center;margin-top:-8px;">'
+            f'{n_linhas:,} linhas na tabela fato</p>',
+            unsafe_allow_html=True,
+        )
+
+        # ── divider + botão ────────────────────────────────────────────────
+        st.markdown(
+            '<div style="height:1px; background: rgba(167,139,250,0.15); margin: 20px 0;"></div>',
+            unsafe_allow_html=True,
+        )
+        gerar = st.button("Gerar base agora", use_container_width=True, type="primary")
+
+    return setor, data_inicio, data_fim, n_linhas, gerar
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  HERO
+# ═══════════════════════════════════════════════════════════════════════════
+def render_hero() -> None:
+    """Renderiza o bloco hero da página principal."""
     st.markdown("""
-    <div style="padding: 8px 0 20px;">
-        <div style="font-family: Syne, sans-serif; font-size: 1.1rem; font-weight: 800;
-                    color: #f0f4ff; margin-bottom: 4px;">BI Data Generator</div>
-        <div style="font-family: Syne, sans-serif; font-size: 0.65rem; font-weight: 700;
-                    letter-spacing: 3px; text-transform: uppercase; color: #a78bfa;
-                    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
-                    border-radius: 100px; padding: 3px 12px; display: inline-block;">PRO</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div style="height:1px; background: rgba(167,139,250,0.15); margin-bottom:20px;"></div>', unsafe_allow_html=True)
-
-    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 10px;">Setor</p>', unsafe_allow_html=True)
-    setor = st.selectbox("", list(SETORES.keys()), label_visibility="collapsed")
-
-    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">Período</p>', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        data_inicio = st.date_input("Início", value=date(2023, 1, 1))
-    with col2:
-        data_fim = st.date_input("Fim", value=date(2023, 12, 31))
-
-    if data_fim <= data_inicio:
-        st.markdown('<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;font-size:0.8rem;color:#fca5a5;margin-top:8px;">&#9888; Data fim deve ser após a data início.</div>', unsafe_allow_html=True)
-
-    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">Volume de dados</p>', unsafe_allow_html=True)
-    n_linhas = st.slider("", min_value=1000, max_value=10000, value=5000, step=500, label_visibility="collapsed")
-    st.markdown(f'<p style="font-size:0.75rem;color:#7b8ba8;text-align:center;margin-top:-8px;">{n_linhas:,} linhas na tabela fato</p>', unsafe_allow_html=True)
-
-    st.markdown('<div style="height:1px; background: rgba(167,139,250,0.15); margin: 20px 0;"></div>', unsafe_allow_html=True)
-    gerar = st.button("Gerar base agora", use_container_width=True, type="primary")
-
-# ── HERO ─────────────────────────────────────────────────────────────────────
-st.markdown("""
 <div class="hero-wrapper">
     <div class="hero-badge">Star Schema · 10 Setores · dCalendario</div>
     <h1 class="hero-title">
@@ -1188,25 +1251,22 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── geração ──────────────────────────────────────────────────────────────────
-if gerar:
-    if data_fim <= data_inicio:
-        st.error("Corrija as datas antes de gerar.")
-        st.stop()
 
-    with st.spinner("Gerando base de dados..."):
-        fn   = SETORES[setor]
-        nome = setor.split(" ", 1)[1]
-        tabelas = fn(n_linhas, data_inicio, data_fim)
+# ═══════════════════════════════════════════════════════════════════════════
+#  RESULTADO — métricas, preview e download
+# ═══════════════════════════════════════════════════════════════════════════
+def render_resultado(nome: str, tabelas: dict[str, pd.DataFrame]) -> None:
+    """Renderiza métricas, preview de tabelas e botão de download."""
+    st.markdown(
+        f'<div class="success-box">✅ Base <strong>{nome}</strong> gerada com sucesso!'
+        f' {len(tabelas)} tabelas prontas para download.</div>',
+        unsafe_allow_html=True,
+    )
 
-    st.markdown(f'<div class="success-box">✅ Base <strong>{nome}</strong> gerada com sucesso! {len(tabelas)} tabelas prontas para download.</div>', unsafe_allow_html=True)
-
-    # ── métricas ─────────────────────────────────────────────────────────────
+    # métricas
     st.markdown('<h3 class="section-header-plain">Resumo da base gerada</h3>', unsafe_allow_html=True)
-
     n_cols = min(len(tabelas), 7)
     cols   = st.columns(n_cols)
-    icons  = {"Fato": "📊", "Dim": "📋", "dCal": "📅"}
     for i, (tname, tdf) in enumerate(tabelas.items()):
         icon = "📅" if tname.startswith("dCal") else ("📊" if tname.startswith("Fato") else "📋")
         with cols[i % n_cols]:
@@ -1219,7 +1279,7 @@ if gerar:
             </div>
             """, unsafe_allow_html=True)
 
-    # ── preview ───────────────────────────────────────────────────────────────
+    # preview
     st.markdown('<h3 class="section-header">Preview das tabelas</h3>', unsafe_allow_html=True)
     tabs = st.tabs(list(tabelas.keys()))
     for tab, (tname, tdf) in zip(tabs, tabelas.items()):
@@ -1227,10 +1287,10 @@ if gerar:
             st.dataframe(tdf.head(20), use_container_width=True)
             st.caption(f"{len(tdf):,} linhas · {len(tdf.columns)} colunas")
 
-    # ── download ──────────────────────────────────────────────────────────────
+    # download
     st.markdown('<h3 class="section-header-plain">Download</h3>', unsafe_allow_html=True)
     zip_bytes    = to_zip(tabelas)
-    nome_arquivo = f"Base_BI_{nome.replace(' ','_')}.zip"
+    nome_arquivo = f"Base_BI_{nome.replace(' ', '_')}.zip"
     st.download_button(
         label=f"Baixar {nome_arquivo}",
         data=zip_bytes,
@@ -1239,7 +1299,6 @@ if gerar:
         use_container_width=True,
         type="primary",
     )
-
     st.markdown("""
     <div class="info-box">
         <strong>Dica Power BI:</strong> Importe os CSVs e crie relações usando as colunas
@@ -1248,8 +1307,12 @@ if gerar:
     </div>
     """, unsafe_allow_html=True)
 
-else:
-    # ── estado inicial ────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ESTADO INICIAL (sem geração)
+# ═══════════════════════════════════════════════════════════════════════════
+def render_estado_inicial() -> None:
+    """Renderiza a tela de boas-vindas com instruções e setores disponíveis."""
     st.markdown('<h3 class="section-header">Como usar</h3>', unsafe_allow_html=True)
     st.markdown("""
     <div class="steps-grid">
@@ -1287,11 +1350,18 @@ else:
         ("⚡", "Energia"),     ("📡", "Telecom"),    ("🏭", "Indústria"),
         ("🌾", "Agronegócio"),
     ]
-    st.markdown('<div class="sector-grid">' + "".join([
-        f'<div class="sector-card"><span class="sector-card-icon">{ico}</span>'
-        f'<div class="sector-card-name">{nome}</div></div>'
-        for ico, nome in setores_info
-    ]) + '</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sector-grid">'
+        + "".join([
+            f'<div class="sector-card">'
+            f'<span class="sector-card-icon">{ico}</span>'
+            f'<div class="sector-card-name">{nome}</div>'
+            f'</div>'
+            for ico, nome in setores_info
+        ])
+        + '</div>',
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<h3 class="section-header">Estrutura Star Schema</h3>', unsafe_allow_html=True)
     st.markdown("""
@@ -1302,3 +1372,31 @@ else:
         Tudo exportado em CSVs compactados em um único <code>.zip</code>.
     </div>
     """, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  MAIN
+# ═══════════════════════════════════════════════════════════════════════════
+def main() -> None:
+    inject_css()
+    render_hero()
+
+    setor, data_inicio, data_fim, n_linhas, gerar = render_sidebar()
+
+    if gerar:
+        if data_fim <= data_inicio:
+            st.error("Corrija as datas antes de gerar.")
+            st.stop()
+
+        with st.spinner("Gerando base de dados..."):
+            fn      = SETORES[setor]
+            nome    = setor.split(" ", 1)[1]
+            tabelas = fn(n_linhas, data_inicio, data_fim)
+
+        render_resultado(nome, tabelas)
+    else:
+        render_estado_inicial()
+
+
+if __name__ == "__main__":
+    main()
