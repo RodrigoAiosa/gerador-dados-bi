@@ -1054,6 +1054,16 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
     border-color: rgba(167,139,250,0.4) !important;
 }
 
+/* ── SLIDER — esconde input numérico ao hover ── */
+[data-testid="stSidebar"] [data-testid="stSlider"] div[data-testid="stThumbValue"],
+[data-testid="stSidebar"] .stSlider input[type="range"] + div,
+[data-testid="stSidebar"] .stSlider [role="slider"] + input,
+[data-testid="stSidebar"] .stSlider input[type="number"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0e27; }
