@@ -1013,37 +1013,30 @@ hr {
 /* ── DATAFRAME ── */
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
-/* ── BOTÃO COLAPSAR SIDEBAR — esconde texto material icon, injeta «« ── */
+/* ── BOTÃO COLAPSAR SIDEBAR — usa ícone Material nativo ── */
 
-/* Quando a sidebar está ABERTA — botão dentro da sidebar */
+/* Esconde SOMENTE o texto material icon quando sidebar está FECHADA */
+[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"],
+[data-testid="stSidebarCollapsedControl"] p {
+    transform: scaleX(-1) !important;
+    display: inline-block !important;
+    color: #a78bfa !important;
+}
+
+/* Esconde SOMENTE o texto material icon quando sidebar está ABERTA */
 [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] span,
 [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] p {
-    display: none !important;
-    font-size: 0 !important;
+    color: #a78bfa !important;
+    display: inline-block !important;
 }
+
+/* Remove qualquer conteúdo gerado anteriormente */
+[data-testid="stSidebarCollapsedControl"] button::after,
 [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"]::after {
-    content: '«';
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #a78bfa;
-    line-height: 1;
+    content: none !important;
 }
 
-/* Quando a sidebar está FECHADA — botão flutuante (stSidebarCollapsedControl) */
-[data-testid="stSidebarCollapsedControl"] span,
-[data-testid="stSidebarCollapsedControl"] p {
-    display: none !important;
-    font-size: 0 !important;
-}
-[data-testid="stSidebarCollapsedControl"] button::after {
-    content: '»';
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #a78bfa;
-    line-height: 1;
-}
-
-/* Garante que o botão tenha tamanho mínimo visível */
+/* Estilo do botão nos dois estados */
 [data-testid="stSidebarCollapsedControl"] button,
 [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] {
     min-width: 32px !important;
