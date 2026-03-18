@@ -676,21 +676,401 @@ SETORES = {
 # ═══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    .main-title { font-size: 2.4rem; font-weight: 800; margin-bottom: .2rem; }
-    .sub-title  { color: #8fa0bb; font-size: 1rem; margin-bottom: 1.5rem; }
-    .metric-label { font-size: .75rem; color: #8fa0bb; }
-    .metric-value { font-size: 1.4rem; font-weight: 800; color: #00b4d8; }
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, .main, [data-testid="stAppViewContainer"] {
+    background-color: #0a0e27 !important;
+}
+
+[data-testid="stAppViewContainer"] {
+    background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139,92,246,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 80% 60%, rgba(59,130,246,0.08) 0%, transparent 50%);
+}
+
+[data-testid="stHeader"] { background: transparent !important; }
+
+.main h1, .main h2, .main h3, .main h4,
+.main p, .main a, .main li,
+[data-testid="stAppViewContainer"] div:not([data-testid="stSidebar"]) {
+    font-family: 'DM Sans', sans-serif !important;
+}
+
+[data-testid="stMarkdownContainer"] { width: 100% !important; }
+.block-container {
+    max-width: 100% !important;
+    padding-left: 4rem !important;
+    padding-right: 4rem !important;
+}
+
+/* ── SIDEBAR ── */
+[data-testid="stSidebar"] {
+    background: rgba(10, 14, 39, 0.95) !important;
+    border-right: 1px solid rgba(167,139,250,0.15) !important;
+}
+[data-testid="stSidebar"] * {
+    font-family: 'DM Sans', sans-serif !important;
+    color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] .stSelectbox > div > div {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(167,139,250,0.2) !important;
+    color: #e2e8f0 !important;
+    border-radius: 12px !important;
+}
+[data-testid="stSidebar"] .stSlider > div > div > div {
+    background: #a78bfa !important;
+}
+
+/* ── HERO ── */
+.hero-wrapper {
+    text-align: center;
+    padding: 72px 20px 48px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.hero-badge {
+    display: inline-block;
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    border: 1px solid rgba(167,139,250,0.35);
+    background: rgba(167,139,250,0.07);
+    padding: 6px 18px;
+    border-radius: 100px;
+    margin-bottom: 26px;
+}
+.hero-title {
+    font-family: 'Syne', sans-serif !important;
+    font-size: clamp(2.2rem, 4.5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    color: #f0f4ff;
+    margin: 0 auto 18px;
+    max-width: 760px;
+    text-align: center;
+}
+.hero-title .accent {
+    background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 50%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-subtitle {
+    font-size: 1rem;
+    font-weight: 300;
+    color: #7b8ba8;
+    max-width: 520px;
+    margin: 0 auto 44px;
+    line-height: 1.75;
+    text-align: center;
+}
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+    margin-bottom: 52px;
+}
+.hero-stat { text-align: center; }
+.hero-stat-number {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #a78bfa;
+    display: block;
+    line-height: 1;
+}
+.hero-stat-label {
+    font-size: 0.72rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 6px;
+    display: block;
+}
+.hero-divider {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto 52px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.3), transparent);
+}
+
+/* ── SECTION HEADERS ── */
+.section-header {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #f0f4ff;
+    margin: 44px 0 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(167,139,250,0.2);
+    letter-spacing: -0.5px;
+    position: relative;
+}
+.section-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 48px;
+    height: 2px;
+    background: #a78bfa;
+}
+
+/* ── STAT CARDS ── */
+.stat-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 18px;
+    padding: 28px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stat-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(167,139,250,0.4);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.stat-card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    display: block;
+}
+.stat-number {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #a78bfa;
+    margin-bottom: 6px;
+    line-height: 1;
+    display: block;
+}
+.stat-label {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: block;
+}
+.stat-sublabel {
+    font-size: 0.78rem;
+    color: #4a5568;
+    margin-top: 6px;
+    font-weight: 300;
+    display: block;
+}
+
+/* ── SECTOR CARDS ── */
+.sector-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+.sector-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
+    border: 1px solid rgba(167,139,250,0.18);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.sector-card:hover {
+    border-color: rgba(167,139,250,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+}
+.sector-card-icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
+.sector-card-name {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+/* ── STEPS ── */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+}
+.step-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
+    border: 1px solid rgba(167,139,250,0.18);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.step-card:hover {
+    border-color: rgba(167,139,250,0.4);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+}
+.step-num {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 100px;
+    padding: 3px 12px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+.step-icon { font-size: 1.8rem; display: block; margin-bottom: 10px; }
+.step-title {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #f0f4ff;
+    margin-bottom: 8px;
+}
+.step-text { font-size: 0.78rem; color: #7b8ba8; line-height: 1.6; font-weight: 300; }
+
+/* ── INFO BOX ── */
+.info-box {
+    background: linear-gradient(145deg, rgba(167,139,250,0.08) 0%, rgba(124,58,237,0.05) 100%);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin: 20px 0;
+    font-size: 0.88rem;
+    color: #c4b5fd;
+    line-height: 1.7;
+}
+.info-box strong { color: #a78bfa; }
+
+/* ── SUCCESS BOX ── */
+.success-box {
+    background: linear-gradient(145deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%);
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 14px;
+    padding: 16px 20px;
+    font-size: 0.9rem;
+    color: #86efac;
+    margin: 16px 0;
+}
+
+/* ── INPUTS ── */
+.stSelectbox > div > div {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(167,139,250,0.2) !important;
+    color: #e2e8f0 !important;
+    border-radius: 12px !important;
+}
+.stDateInput > div > div {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(167,139,250,0.2) !important;
+    border-radius: 12px !important;
+}
+hr {
+    border: none !important;
+    border-top: 1px solid rgba(167,139,250,0.1) !important;
+    margin: 36px 0 !important;
+}
+
+/* ── TABS ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(167,139,250,0.2) !important;
+    gap: 4px;
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: #7b8ba8 !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.5px;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 10px 20px !important;
+    transition: color 0.2s, background 0.2s;
+}
+.stTabs [aria-selected="true"] {
+    background: rgba(167,139,250,0.1) !important;
+    color: #a78bfa !important;
+    border-bottom: 2px solid #a78bfa !important;
+}
+
+/* ── DATAFRAME ── */
+.stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0e27; }
+::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.4); }
+
+/* ── BUTTONS ── */
+.stButton > button {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    padding: 10px 22px !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+}
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(124,58,237,0.4) !important;
+}
+.stDownloadButton > button {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+}
+.stDownloadButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(124,58,237,0.45) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ── sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## ⚙️ Configurações")
-    st.markdown("---")
+    st.markdown("""
+    <div style="padding: 8px 0 20px;">
+        <div style="font-family: Syne, sans-serif; font-size: 1.1rem; font-weight: 800;
+                    color: #f0f4ff; margin-bottom: 4px;">BI Data Generator</div>
+        <div style="font-family: Syne, sans-serif; font-size: 0.65rem; font-weight: 700;
+                    letter-spacing: 3px; text-transform: uppercase; color: #a78bfa;
+                    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
+                    border-radius: 100px; padding: 3px 12px; display: inline-block;">PRO</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    setor = st.selectbox("**Setor**", list(SETORES.keys()))
+    st.markdown('<div style="height:1px; background: rgba(167,139,250,0.15); margin-bottom:20px;"></div>', unsafe_allow_html=True)
 
-    st.markdown("**Período**")
+    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin-bottom: 10px;">Setor</p>', unsafe_allow_html=True)
+    setor = st.selectbox("", list(SETORES.keys()), label_visibility="collapsed")
+
+    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">Período</p>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         data_inicio = st.date_input("Início", value=date(2023, 1, 1))
@@ -698,19 +1078,47 @@ with st.sidebar:
         data_fim = st.date_input("Fim", value=date(2023, 12, 31))
 
     if data_fim <= data_inicio:
-        st.error("⚠️ A data fim deve ser após a data início.")
+        st.markdown('<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;font-size:0.8rem;color:#fca5a5;margin-top:8px;">&#9888; Data fim deve ser após a data início.</div>', unsafe_allow_html=True)
 
-    n_linhas = st.slider(
-        "**Linhas na tabela fato**",
-        min_value=1000, max_value=10000, value=5000, step=500
-    )
+    st.markdown('<p style="font-family: Syne, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; margin: 18px 0 10px;">Volume de dados</p>', unsafe_allow_html=True)
+    n_linhas = st.slider("", min_value=1000, max_value=10000, value=5000, step=500, label_visibility="collapsed")
+    st.markdown(f'<p style="font-size:0.75rem;color:#7b8ba8;text-align:center;margin-top:-8px;">{n_linhas:,} linhas na tabela fato</p>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    gerar = st.button("🚀 Gerar base", use_container_width=True, type="primary")
+    st.markdown('<div style="height:1px; background: rgba(167,139,250,0.15); margin: 20px 0;"></div>', unsafe_allow_html=True)
+    gerar = st.button("Gerar base agora", use_container_width=True, type="primary")
 
-# ── header ───────────────────────────────────────────────────────────────────
-st.markdown('<div class="main-title">📊 BI Data Generator PRO</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Bases de dados profissionais no modelo estrela para Power BI, Tableau e Data Analytics</div>', unsafe_allow_html=True)
+# ── HERO ─────────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="hero-wrapper">
+    <div class="hero-badge">Star Schema · 10 Setores · dCalendario</div>
+    <h1 class="hero-title">
+        Dados reais para seu projeto de<br><span class="accent">Business Intelligence</span>
+    </h1>
+    <p class="hero-subtitle">
+        Gere bases profissionais no modelo estrela em segundos.
+        Tabelas fato, dimensões e dCalendario prontos para Power BI, Tableau e qualquer ferramenta de BI.
+    </p>
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <span class="hero-stat-number">10</span>
+            <span class="hero-stat-label">Setores</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-number">10k</span>
+            <span class="hero-stat-label">Linhas máx.</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-number">.zip</span>
+            <span class="hero-stat-label">Download</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-number">free</span>
+            <span class="hero-stat-label">Sem cadastro</span>
+        </div>
+    </div>
+    <div class="hero-divider"></div>
+</div>
+""", unsafe_allow_html=True)
 
 # ── geração ──────────────────────────────────────────────────────────────────
 if gerar:
@@ -720,33 +1128,43 @@ if gerar:
 
     with st.spinner("Gerando base de dados..."):
         fn   = SETORES[setor]
-        nome = setor.split(" ", 1)[1]  # sem emoji
+        nome = setor.split(" ", 1)[1]
         tabelas = fn(n_linhas, data_inicio, data_fim)
 
-    st.success(f"✅ Base **{nome}** gerada com sucesso!")
+    st.markdown(f'<div class="success-box">✅ Base <strong>{nome}</strong> gerada com sucesso! {len(tabelas)} tabelas prontas para download.</div>', unsafe_allow_html=True)
 
-    # ── métricas ────────────────────────────────────────────────────────────
-    st.markdown("### 📈 Resumo da base gerada")
-    cols = st.columns(len(tabelas))
+    # ── métricas ─────────────────────────────────────────────────────────────
+    st.markdown('<h3 class="section-header">Resumo da base gerada</h3>', unsafe_allow_html=True)
+
+    n_cols = min(len(tabelas), 7)
+    cols   = st.columns(n_cols)
+    icons  = {"Fato": "📊", "Dim": "📋", "dCal": "📅"}
     for i, (tname, tdf) in enumerate(tabelas.items()):
-        with cols[i % len(cols)]:
-            st.metric(label=tname, value=f"{len(tdf):,}", delta="linhas")
+        icon = "📅" if tname.startswith("dCal") else ("📊" if tname.startswith("Fato") else "📋")
+        with cols[i % n_cols]:
+            st.markdown(f"""
+            <div class="stat-card">
+                <span class="stat-card-icon">{icon}</span>
+                <span class="stat-number">{len(tdf):,}</span>
+                <span class="stat-label">{tname}</span>
+                <span class="stat-sublabel">{len(tdf.columns)} colunas</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # ── preview das tabelas ─────────────────────────────────────────────────
-    st.markdown("### 🔍 Preview das tabelas")
+    # ── preview ───────────────────────────────────────────────────────────────
+    st.markdown('<h3 class="section-header">Preview das tabelas</h3>', unsafe_allow_html=True)
     tabs = st.tabs(list(tabelas.keys()))
     for tab, (tname, tdf) in zip(tabs, tabelas.items()):
         with tab:
             st.dataframe(tdf.head(20), use_container_width=True)
             st.caption(f"{len(tdf):,} linhas · {len(tdf.columns)} colunas")
 
-    # ── download ─────────────────────────────────────────────────────────────
-    st.markdown("### 📦 Download")
-    zip_bytes = to_zip(tabelas)
+    # ── download ──────────────────────────────────────────────────────────────
+    st.markdown('<h3 class="section-header">Download</h3>', unsafe_allow_html=True)
+    zip_bytes    = to_zip(tabelas)
     nome_arquivo = f"Base_BI_{nome.replace(' ','_')}.zip"
-
     st.download_button(
-        label=f"⬇️ Baixar {nome_arquivo}",
+        label=f"Baixar {nome_arquivo}",
         data=zip_bytes,
         file_name=nome_arquivo,
         mime="application/zip",
@@ -754,34 +1172,65 @@ if gerar:
         type="primary",
     )
 
-    st.info(
-        "📌 **Dica Power BI:** Importe os CSVs e crie relações usando as colunas "
-        "`id_*` (FK) da tabela Fato para as respectivas dimensões. "
-        "Conecte `dCalendario[Data]` ao campo de data da tabela Fato."
-    )
+    st.markdown("""
+    <div class="info-box">
+        <strong>Dica Power BI:</strong> Importe os CSVs e crie relações usando as colunas
+        <code>id_*</code> (FK) da tabela Fato para as respectivas dimensões.
+        Conecte <code>dCalendario[Data]</code> ao campo de data da tabela Fato.
+    </div>
+    """, unsafe_allow_html=True)
 
 else:
-    # ── estado inicial ───────────────────────────────────────────────────────
-    st.markdown("### 🗂️ Como usar")
+    # ── estado inicial ────────────────────────────────────────────────────────
+    st.markdown('<h3 class="section-header">Como usar</h3>', unsafe_allow_html=True)
     st.markdown("""
-1. **Escolha o setor** no painel à esquerda
-2. **Defina o período** de início e fim
-3. **Ajuste o volume** de linhas (1.000 a 10.000)
-4. Clique em **Gerar base**
-5. Faça o **download do .zip** com todos os CSVs
-    """)
+    <div class="steps-grid">
+        <div class="step-card">
+            <span class="step-num">01</span>
+            <span class="step-icon">🏭</span>
+            <div class="step-title">Escolha o setor</div>
+            <div class="step-text">Selecione entre 10 setores com dados contextualmente corretos</div>
+        </div>
+        <div class="step-card">
+            <span class="step-num">02</span>
+            <span class="step-icon">📅</span>
+            <div class="step-title">Defina o período</div>
+            <div class="step-text">Configure as datas — a dCalendario é gerada automaticamente</div>
+        </div>
+        <div class="step-card">
+            <span class="step-num">03</span>
+            <span class="step-icon">🚀</span>
+            <div class="step-title">Clique em Gerar</div>
+            <div class="step-text">A base completa é gerada em segundos com relações íntegras</div>
+        </div>
+        <div class="step-card">
+            <span class="step-num">04</span>
+            <span class="step-icon">📦</span>
+            <div class="step-title">Baixe o .zip</div>
+            <div class="step-text">CSVs prontos para importar no Power BI, Tableau ou Python</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("### ⭐ Estrutura gerada (Star Schema)")
+    st.markdown('<h3 class="section-header">Setores disponíveis</h3>', unsafe_allow_html=True)
+    setores_info = [
+        ("🛒", "Varejo"),     ("💰", "Financeiro"), ("🏥", "Saúde"),
+        ("💻", "Tecnologia"), ("📚", "Educação"),   ("🚚", "Logística"),
+        ("⚡", "Energia"),     ("📡", "Telecom"),    ("🏭", "Indústria"),
+        ("🌾", "Agronegócio"),
+    ]
+    st.markdown('<div class="sector-grid">' + "".join([
+        f'<div class="sector-card"><span class="sector-card-icon">{ico}</span>'
+        f'<div class="sector-card-name">{nome}</div></div>'
+        for ico, nome in setores_info
+    ]) + '</div>', unsafe_allow_html=True)
+
+    st.markdown('<h3 class="section-header">Estrutura Star Schema</h3>', unsafe_allow_html=True)
     st.markdown("""
-Cada base inclui:
-- **Tabela Fato** com chaves estrangeiras (`id_*`) e métricas
-- **Tabelas Dimensão** com chaves primárias e atributos descritivos
-- **dCalendario** com Data, Ano, Mês, MesAno e IdMesAno — compatível com Power Query
-- Tudo zipado em CSVs prontos para importar
-    """)
-
-    st.markdown("### 🏭 Setores disponíveis")
-    cols = st.columns(5)
-    for i, s in enumerate(SETORES.keys()):
-        with cols[i % 5]:
-            st.markdown(f"**{s}**")
+    <div class="info-box">
+        Cada base inclui <strong>Tabela Fato</strong> com chaves estrangeiras (<code>id_*</code>) e métricas,
+        <strong>Tabelas Dimensão</strong> com chaves primárias e atributos descritivos, e
+        <strong>dCalendario</strong> com Data, Ano, Mês, MesAno e IdMesAno — compatível com Power Query.
+        Tudo exportado em CSVs compactados em um único <code>.zip</code>.
+    </div>
+    """, unsafe_allow_html=True)
