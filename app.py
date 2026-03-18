@@ -826,6 +826,16 @@ html, body, .main, [data-testid="stAppViewContainer"] {
     height: 2px;
     background: #a78bfa;
 }
+.section-header-plain {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #f0f4ff;
+    margin: 44px 0 24px;
+    padding-bottom: 0;
+    border-bottom: none;
+    letter-spacing: -0.5px;
+}
 
 /* ── STAT CARDS ── */
 .stat-card {
@@ -1062,9 +1072,12 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
 }
 
 /* ── REMOVE borda superior nativa dos blocos de coluna ── */
-[data-testid="stVerticalBlockBorderWrapper"] {
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stVerticalBlockBorderWrapper"] > div,
+[data-testid="column"] > div:first-child {
     border-top: none !important;
     box-shadow: none !important;
+    outline: none !important;
 }
 
 /* ── SCROLLBAR ── */
@@ -1188,7 +1201,7 @@ if gerar:
     st.markdown(f'<div class="success-box">✅ Base <strong>{nome}</strong> gerada com sucesso! {len(tabelas)} tabelas prontas para download.</div>', unsafe_allow_html=True)
 
     # ── métricas ─────────────────────────────────────────────────────────────
-    st.markdown('<h3 class="section-header">Resumo da base gerada</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 class="section-header-plain">Resumo da base gerada</h3>', unsafe_allow_html=True)
 
     n_cols = min(len(tabelas), 7)
     cols   = st.columns(n_cols)
