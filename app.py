@@ -1013,32 +1013,46 @@ hr {
 /* ── DATAFRAME ── */
 .stDataFrame { border: 1px solid rgba(167,139,250,0.2) !important; border-radius: 12px !important; }
 
-/* ── BOTÃO COLAPSAR SIDEBAR — usa ícone Material nativo ── */
+/* ── BOTÃO COLAPSAR SIDEBAR ── */
 
-/* Esconde SOMENTE o texto material icon quando sidebar está FECHADA */
-[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"],
-[data-testid="stSidebarCollapsedControl"] p {
-    transform: scaleX(-1) !important;
-    display: inline-block !important;
-    color: #a78bfa !important;
+/* Esconde o texto "keyboard_double_arrow_left" do header (sidebar aberta) */
+[data-testid="stHeader"] [data-testid="stIconMaterial"],
+[data-testid="stToolbar"] [data-testid="stIconMaterial"],
+[data-testid="stAppToolbar"] [data-testid="stIconMaterial"],
+button[data-testid="stBaseButton-headerNoPadding"] [data-testid="stIconMaterial"] {
+    font-size: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
 }
 
-/* Esconde SOMENTE o texto material icon quando sidebar está ABERTA */
-[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] span,
-[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] p {
-    color: #a78bfa !important;
-    display: inline-block !important;
+/* Injeta ícone via ::after no botão do header */
+button[data-testid="stBaseButton-headerNoPadding"]::after {
+    content: '⟪';
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #a78bfa;
+    line-height: 1;
+    display: inline-block;
 }
 
-/* Remove qualquer conteúdo gerado anteriormente */
-[data-testid="stSidebarCollapsedControl"] button::after,
-[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"]::after {
-    content: none !important;
+/* Sidebar FECHADA — botão flutuante com ícone invertido */
+[data-testid="stSidebarCollapsedControl"] [data-testid="stIconMaterial"] {
+    font-size: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+}
+[data-testid="stSidebarCollapsedControl"] button::after {
+    content: '⟫';
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #a78bfa;
+    line-height: 1;
+    display: inline-block;
 }
 
-/* Estilo do botão nos dois estados */
+/* Estilo dos botões nos dois estados */
 [data-testid="stSidebarCollapsedControl"] button,
-[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"] {
+button[data-testid="stBaseButton-headerNoPadding"] {
     min-width: 32px !important;
     min-height: 32px !important;
     display: flex !important;
@@ -1050,7 +1064,7 @@ hr {
     transition: background 0.2s, border-color 0.2s !important;
 }
 [data-testid="stSidebarCollapsedControl"] button:hover,
-[data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"]:hover {
+button[data-testid="stBaseButton-headerNoPadding"]:hover {
     background: rgba(167,139,250,0.18) !important;
     border-color: rgba(167,139,250,0.4) !important;
 }
