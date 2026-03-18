@@ -1036,6 +1036,7 @@ span[data-testid="stIconMaterial"] {
     height: 24px !important;
     position: relative !important;
 }
+/* Ícone quando sidebar está ABERTA: seta << para esquerda (indica que fecha) */
 span[data-testid="stIconMaterial"]::before {
     font-family: 'Material Symbols Rounded' !important;
     font-size: 24px !important;
@@ -1043,10 +1044,12 @@ span[data-testid="stIconMaterial"]::before {
     color: #a78bfa !important;
     position: absolute !important;
     top: 0; left: 0 !important;
-    content: "\\eac9" !important;
+    content: "\\eac3" !important; /* keyboard_double_arrow_left */
 }
-[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before {
-    content: "\\eac3" !important;
+/* Ícone quando sidebar está FECHADA: seta >> para direita (indica que abre) */
+[data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before,
+[data-testid="stHeader"] span[data-testid="stIconMaterial"]::before {
+    content: "\\eac9" !important; /* keyboard_double_arrow_right */
 }
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
