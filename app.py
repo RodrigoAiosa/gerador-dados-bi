@@ -850,12 +850,13 @@ html, body, .main, [data-testid="stAppViewContainer"] {
 }
 .stat-number {
     font-family: 'Syne', sans-serif !important;
-    font-size: 2rem;
+    font-size: 1.4rem;
     font-weight: 800;
     color: #a78bfa;
     margin-bottom: 6px;
     line-height: 1;
     display: block;
+    white-space: nowrap;
 }
 .stat-label {
     font-family: 'Syne', sans-serif !important;
