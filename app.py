@@ -1110,6 +1110,7 @@ button[data-testid="stBaseButton-headerNoPadding"]:hover,
     font-family: 'Syne', sans-serif !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
+    margin-top: 8px !important;
     transition: transform 0.2s, box-shadow 0.2s !important;
 }
 .stDownloadButton > button:hover {
@@ -1227,7 +1228,7 @@ if gerar:
             st.caption(f"{len(tdf):,} linhas · {len(tdf.columns)} colunas")
 
     # ── download ──────────────────────────────────────────────────────────────
-    st.markdown('<h3 class="section-header">Download</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 class="section-header-plain">Download</h3>', unsafe_allow_html=True)
     zip_bytes    = to_zip(tabelas)
     nome_arquivo = f"Base_BI_{nome.replace(' ','_')}.zip"
     st.download_button(
