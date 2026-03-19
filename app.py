@@ -886,32 +886,80 @@ html, body, .main, [data-testid="stAppViewContainer"] {
     display: block;
 }
 
-/* ── SECTOR CARDS ── */
+/* ── SECTOR CARDS (flip 3D) ── */
 .sector-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 12px;
     margin: 20px 0;
 }
-.sector-card {
+.flip-wrapper {
+    perspective: 800px;
+    height: 120px;
+    cursor: default;
+}
+.flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.flip-wrapper:hover .flip-inner {
+    transform: rotateY(180deg);
+}
+.flip-front,
+.flip-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 12px;
+    text-align: center;
+}
+.flip-front {
     background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
     border: 1px solid rgba(167,139,250,0.18);
-    border-radius: 14px;
-    padding: 16px 14px;
-    text-align: center;
-    transition: all 0.3s ease;
+    transition: border-color 0.3s;
 }
-.sector-card:hover {
-    border-color: rgba(167,139,250,0.4);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+.flip-wrapper:hover .flip-front {
+    border-color: rgba(167,139,250,0.0);
 }
-.sector-card-icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
+.flip-back {
+    background: linear-gradient(145deg, rgba(167,139,250,0.18) 0%, rgba(124,58,237,0.12) 100%);
+    border: 1px solid rgba(167,139,250,0.45);
+    transform: rotateY(180deg);
+}
+.sector-card-icon {
+    font-size: 1.6rem;
+    display: block;
+    margin-bottom: 8px;
+    line-height: 1;
+}
 .sector-card-name {
     font-family: 'Syne', sans-serif !important;
     font-size: 0.8rem;
     font-weight: 700;
     color: #e2e8f0;
+}
+.flip-back-title {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    margin-bottom: 7px;
+    letter-spacing: 0.2px;
+}
+.flip-back-desc {
+    font-size: 0.72rem;
+    color: #a78bfa;
+    line-height: 1.55;
+    font-weight: 300;
 }
 
 /* ── STEPS ── */
@@ -1036,7 +1084,6 @@ span[data-testid="stIconMaterial"] {
     height: 24px !important;
     position: relative !important;
 }
-/* Ícone quando sidebar está ABERTA: seta << para esquerda (indica que fecha) */
 span[data-testid="stIconMaterial"]::before {
     font-family: 'Material Symbols Rounded' !important;
     font-size: 24px !important;
@@ -1044,12 +1091,11 @@ span[data-testid="stIconMaterial"]::before {
     color: #a78bfa !important;
     position: absolute !important;
     top: 0; left: 0 !important;
-    content: "\\eac3" !important; /* keyboard_double_arrow_left */
+    content: "\\eac3" !important;
 }
-/* Ícone quando sidebar está FECHADA: seta >> para direita (indica que abre) */
 [data-testid="stSidebarCollapsedControl"] span[data-testid="stIconMaterial"]::before,
 [data-testid="stHeader"] span[data-testid="stIconMaterial"]::before {
-    content: "\\eac9" !important; /* keyboard_double_arrow_right */
+    content: "\\eac9" !important;
 }
 button[data-testid="stBaseButton-headerNoPadding"],
 [data-testid="stSidebarCollapsedControl"] button {
@@ -1346,25 +1392,40 @@ def render_estado_inicial() -> None:
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Setores disponíveis com flip cards ────────────────────────────────
     st.markdown('<h3 class="section-header">Setores disponíveis</h3>', unsafe_allow_html=True)
+
     setores_info = [
-        ("🛒", "Varejo"),     ("💰", "Financeiro"), ("🏥", "Saúde"),
-        ("💻", "Tecnologia"), ("📚", "Educação"),   ("🚚", "Logística"),
-        ("⚡", "Energia"),     ("📡", "Telecom"),    ("🏭", "Indústria"),
-        ("🌾", "Agronegócio"),
+        ("🛒", "Varejo",      "Vendas, clientes, produtos, vendedores, filiais e geografia"),
+        ("💰", "Financeiro",  "Transações, contas, agências e produtos bancários"),
+        ("🏥", "Saúde",       "Atendimentos, pacientes, médicos, procedimentos e unidades"),
+        ("💻", "Tecnologia",  "Contratos SaaS, MRR, ARR, NPS, clientes e agentes"),
+        ("📚", "Educação",    "Matrículas, alunos, cursos, instrutores e notas"),
+        ("🚚", "Logística",   "Entregas, rotas, transportadoras, peso, frete e SLA"),
+        ("⚡",  "Energia",     "Leituras de consumo kWh, medidores, subestações e faturas"),
+        ("📡", "Telecom",     "Chamadas, assinantes, planos, torres e qualidade de sinal"),
+        ("🏭", "Indústria",   "Ordens de produção, máquinas, OEE, refugo e operadores"),
+        ("🌾", "Agronegócio", "Safras, culturas, propriedades, produtividade e clima"),
     ]
-    st.markdown(
-        '<div class="sector-grid">'
-        + "".join([
-            f'<div class="sector-card">'
-            f'<span class="sector-card-icon">{ico}</span>'
-            f'<div class="sector-card-name">{nome}</div>'
-            f'</div>'
-            for ico, nome in setores_info
-        ])
-        + '</div>',
-        unsafe_allow_html=True,
-    )
+
+    cards_html = '<div class="sector-grid">'
+    for ico, nome, desc in setores_info:
+        cards_html += f"""
+        <div class="flip-wrapper">
+          <div class="flip-inner">
+            <div class="flip-front">
+              <span class="sector-card-icon">{ico}</span>
+              <div class="sector-card-name">{nome}</div>
+            </div>
+            <div class="flip-back">
+              <div class="flip-back-title">{nome}</div>
+              <div class="flip-back-desc">{desc}</div>
+            </div>
+          </div>
+        </div>"""
+    cards_html += '</div>'
+
+    st.markdown(cards_html, unsafe_allow_html=True)
 
     st.markdown('<h3 class="section-header">Estrutura Star Schema</h3>', unsafe_allow_html=True)
     st.markdown("""
